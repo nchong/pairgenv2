@@ -39,19 +39,19 @@ endif
 OBJS = gpuneighlist.o
 
 $(OUT): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) $(LIB) $(OPENCL) $(SHARED) -o $@ $^
+	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) $(OPENCL_INC) $(LIB) $(OPENCL) $(SHARED) -o $@ $^
 
 gpuneighlist.o: gpuneighlist.cpp decode.cl.h
-	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) -D EMBED_CL=$(EMBED_CL) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) $(OPENCL_INC) -D EMBED_CL=$(EMBED_CL) -c -o $@ $<
 
 %.cl.h: %.cl
 	$(OPENCL2INCLUDE) $< $@
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) $(OPENCL_INC) -c -o $@ $<
 
 test: test_gpuneighlist.cpp gpuneighlist.o
-	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) $(LIB) $(OPENCL) 				  -o $@ $^
+	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) $(OPENCL_INC) -o $@ $^ $(LIB) $(OPENCL_LIB)
 
 .PHONY: clean
 clean:

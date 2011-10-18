@@ -4,6 +4,7 @@
 #include "segscan.h"
 
 #include <cassert>
+#include <cstdio>
 
 #define PARANOID true
 
