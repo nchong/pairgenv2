@@ -1,6 +1,7 @@
 #ifndef cl_khr_fp64
 #error "Double precision not supported on device."
 #endif
+#pragma OPENCL EXTENSION cl_khr_fp64: enable
 
 __constant double d_dt = CONSTANT_DT;
 __constant double d_nktv2p = CONSTANT_NKTV2P;
