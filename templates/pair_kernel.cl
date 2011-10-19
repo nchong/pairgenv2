@@ -2,6 +2,7 @@
 #ifndef cl_khr_fp64
 #error "Double precision not supported on device."
 #endif
+#pragma OPENCL EXTENSION cl_khr_fp64: enable
 {% endif %}
 {%- macro comment(header, set, access) %}
  * {{ header }}
