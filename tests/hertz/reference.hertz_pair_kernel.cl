@@ -1,4 +1,6 @@
-#define sqrtFiveOverSix 0.91287092917527685576161630466800355658790782499663875
+#ifndef cl_khr_fp64
+#error "Double precision not supported on device."
+#endif
 
 __constant double d_dt = CONSTANT_DT;
 __constant double d_nktv2p = CONSTANT_NKTV2P;
@@ -6,6 +8,8 @@ __constant double d_yeff = CONSTANT_YEFF;
 __constant double d_geff = CONSTANT_GEFF;
 __constant double d_betaeff = CONSTANT_BETAEFF;
 __constant double d_coeffFrict = CONSTANT_COEFFFRICT;
+
+#define sqrtFiveOverSix 0.91287092917527685576161630466800355658790782499663875
 
 inline void hertz_pair_kernel(
   double xi[3], 
