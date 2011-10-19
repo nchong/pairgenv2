@@ -52,7 +52,7 @@ __kernel void {{name}}_tpa_compute_kernel(
   __global int *numneigh,
   __global int *pageidx,
   __global int *offset,
-  __global int pgsize,
+  int pgsize,
   __global int *neighidx
   {%- for p in params if not p.is_type('P', 'RO') -%}
   {{- ', ' if loop.first }}

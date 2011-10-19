@@ -64,3 +64,4 @@ class {{ classname }}Wrapper {
 
 };
 #endif
+

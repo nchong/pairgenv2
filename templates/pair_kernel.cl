@@ -1,3 +1,8 @@
+{% if cl_khr_fp64 %}
+#ifndef cl_khr_fp64
+#error "Double precision not supported on device."
+#endif
+{% endif %}
 {%- macro comment(header, set, access) %}
  * {{ header }}
 {%- for p in params if p.is_type(set, access) %}

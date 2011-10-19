@@ -47,3 +47,4 @@ void {{classname}}GpuNeighList::unload_{{ p.name() }}({{ p.pages() }}) {
   unload_pages({{ p.name(pre='d_') }}, {{ p.name(pre='h_', suf='pages') }}, /*dim=*/{{ p.dim }});
 }
 {% endfor %}
+
