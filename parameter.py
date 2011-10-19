@@ -22,13 +22,11 @@ class Parameter:
     if set == Set.N and access == Access.SUM:
       raise Exception, 'Per-neighbor sum parameter is not supported'
     if set not in [ Set.N, Set.P ]:
-      raise Exception, 'Unknown set [' + set + ']'
+      raise Exception, 'Unknown set [%d]' % set
     if access not in [ Access.RO, Access.RW, Access.SUM ]:
-      raise Exception, 'Unknown access [' + access + ']'
-    if dim not in [ 1, 3]:
-      raise Exception, 'Unknown dim [' + dim + ']'
+      raise Exception, 'Unknown access [%d]' % access
     if type not in [ 'double', 'int' ]:
-      raise Exception, 'Unknown type [' + type + ']'
+      raise Exception, 'Unknown type [%s]' % type
     self.__name = name
     self.type = type
     self.dim = dim

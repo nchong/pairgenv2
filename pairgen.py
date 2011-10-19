@@ -21,7 +21,10 @@ if __name__ == '__main__':
 
   # top-level name and description of pairstyle
   name = yaml_input['name'].lower()
-  desc = yaml_input['description']
+  if yaml_input.has_key('description'):
+    desc = yaml_input['description']
+  else:
+    desc = ""
 
   params = []
   for p in yaml_input['parameters']:

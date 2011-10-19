@@ -1,3 +1,5 @@
+OUT=libhertz.so
+
 # COMPILE OPTIONS
 CXX = g++
 LOG_LEVEL = LOG_WARN
@@ -31,10 +33,15 @@ endif
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) $(OPENCL_INC) -c -o $@ $<
 
+all: $(OUT) driver
+
 OBJS = hertz_gpuneighlist.o	hertz_wrapper.o
 
-driver: driver.cpp $(OBJS)
-	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) $(OPENCL_INC) -o $@ $^ $(LIB) $(OPENCL_LIB)
+$(OUT): $(OBJS)
+	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) $(OPENCL_INC) $(LIB) $(OPENCL) $(SHARED) -o $@ $^
+
+driver: driver.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) $(OPENCL_INC) -I. -o $@ $^ $(LIB) -L. -lhertz $(OPENCL_LIB)
 
 hertz_gpuneighlist.cpp hertz_wrapper.cpp:
 	../../pairgen.py hertz.yml
@@ -42,4 +49,4 @@ hertz_gpuneighlist.cpp hertz_wrapper.cpp:
 	mv -f new.hertz_pair_kernel.cl hertz_pair_kernel.cl
 
 clean:
-	rm -f hertz_* driver
+	rm -f hertz_* driver $(OUT)
