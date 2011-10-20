@@ -89,6 +89,10 @@ void GpuNeighList::reload(int *numneigh, int **firstneigh, int **pages, int relo
     printf("Running scan...");
     scan->scan(d_offset, nparticles);
     printf("done\n");
+    // value-initialization ensures pageidx[i] = 0 for all i
+    int *pageidx = new int[nparticles]();
+    clw.memcpy_to_dev(d_pageidx, d_pageidx_size, pageidx);
+    delete[] pageidx;
   } else {
     // first part of decode: for each particle
     //   - which page their neighbor list resides in (pageidx)
