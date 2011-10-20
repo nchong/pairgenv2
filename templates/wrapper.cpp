@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <sstream>
+#include <iostream>
 
 using namespace std;
 
@@ -22,10 +23,9 @@ using namespace std;
       {{ p.decl(pre='*h_', include_dim=False) }}{{ ',' if not loop.last }}
     {% endfor -%}
   ) :
-  clw(clw), wx(wx), N(N) {
-    gx = wx * ((N/wx)+1);
-    d_nl = new {{ classname }}GpuNeighList(clw, wx, N, maxpage, pgsize);
-
+  clw(clw), N(N), wx(wx), gx(wx * ((N/wx)+1)),
+  d_nl(new {{ classname }}GpuNeighList(clw, wx, N, maxpage, pgsize))
+{
     {% for p in params if p.is_type('P', '-') -%}
     {{ p.devname() }} = clw.dev_malloc({{ p.sizeof() }});
     {% endfor %}
@@ -33,10 +33,14 @@ using namespace std;
       clw.memcpy_to_dev({{ memcpy_args(p) }});
     {% endfor %}
     stringstream extra_flags;
-    extra_flags << " -I .";
+    extra_flags << " -I {{ cwd }}";
     {% for c in consts -%}
     extra_flags << " -D {{ c.hashdefine() }}=" << {{ c.name(pre='h_')}};
     {% endfor %}
+#if DEBUG
+    cerr << "[DEBUG] Kernel tpa parameters gx=" << gx << " wx=" << wx << endl;
+    cerr << "[DEBUG] Compiling with extra_flags = [" << extra_flags.str() << "]" << endl;
+#endif
     clw.create_all_kernels(clw.compile("{{name}}_tpa_compute_kernel.cl", extra_flags.str()));
     tpa = clw.kernel_of_name("{{name}}_tpa_compute_kernel");
   //clw.create_all_kernels(clw.compile("{{name}}_bpa_compute_kernel.cl"));

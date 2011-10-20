@@ -8,9 +8,9 @@ class {{ classname }}Wrapper {
   private:
     // OpenCL parameters
     CLWrapper &clw;
+    int N;
     size_t wx;
     size_t gx;
-    int N;
 
     // implementations
     cl_kernel tpa;

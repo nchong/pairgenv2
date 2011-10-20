@@ -3,6 +3,7 @@
 from constant import *
 from parameter import * 
 import getopt, sys
+import os
 import yaml
 from jinja2 import Environment, PackageLoader
 
@@ -62,6 +63,7 @@ if __name__ == '__main__':
     output = name + '_' + t
     template = env.get_template(t)
     template.stream(
+      cwd=os.getcwd(),
       cl_khr_fp64=cl_khr_fp64,
       name=name,
       headername=name.upper(),
