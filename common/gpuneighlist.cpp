@@ -6,7 +6,7 @@
 #include <cassert>
 #include <cstdio>
 
-#define PARANOID true
+#define PARANOID false
 
 GpuNeighList::GpuNeighList(CLWrapper &clw, size_t wx,
   int nparticles, int maxpage, int pgsize) :
@@ -23,7 +23,9 @@ GpuNeighList::GpuNeighList(CLWrapper &clw, size_t wx,
   d_neighidx_size(maxpage * pgsize * sizeof(int)),
 
   scan(new Scan(clw, wx)),
-  segscan(new SegmentedScan(clw, wx))
+  segscan(new SegmentedScan(clw, wx)),
+
+  tload(0), tunload(0), tdecode(0)
 {
 
   d_numneigh = clw.dev_malloc(d_numneigh_size, CL_MEM_READ_ONLY);
@@ -52,6 +54,16 @@ GpuNeighList::~GpuNeighList() {
   clw.dev_free(d_pageidx);
   clw.dev_free(d_offset);
   clw.dev_free(d_neighidx);
+}
+
+void GpuNeighList::get_timers(map<string,float> &timings) {
+  if (clw.has_profiling()) {
+    timings.insert(make_pair("GPUNL1. load pages   ", tload));
+    timings.insert(make_pair("GPUNL2. unload pages ", tunload));
+    timings.insert(make_pair("GPUNL2. decode_neighlist_p1", tdecode));
+    scan->get_timers(timings);
+    segscan->get_timers(timings);
+  }
 }
 
 /*
@@ -86,9 +98,7 @@ void GpuNeighList::reload(int *numneigh, int **firstneigh, int **pages, int relo
   if (maxpage == 1) {
     // every particle has pageidx=0 (implicitly) 
     // just do scan on d_offset
-    printf("Running scan...");
     scan->scan(d_offset, nparticles);
-    printf("done\n");
     // value-initialization ensures pageidx[i] = 0 for all i
     int *pageidx = new int[nparticles]();
     clw.memcpy_to_dev(d_pageidx, d_pageidx_size, pageidx);
@@ -110,13 +120,9 @@ void GpuNeighList::reload(int *numneigh, int **firstneigh, int **pages, int relo
       _pgsize,
       d_pagebreak,
       d_pageidx);
-    printf("Running decode_neighlist_p1...");
-    float k0 = clw.run_kernel_with_timing(decode_neighlist_p1, /*dim=*/1, &gx, &wx);
-    printf("done (%fms)\n", k0);
+    tdecode += clw.run_kernel_with_timing(decode_neighlist_p1, /*dim=*/1, &gx, &wx);
 
-    printf("Running segmented scan...");
     segscan->scan(d_offset, d_pagebreak, nparticles);
-    printf("done\n");
   }
 
 #if PARANOID

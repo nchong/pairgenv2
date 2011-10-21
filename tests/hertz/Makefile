@@ -33,15 +33,18 @@ endif
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) $(OPENCL_INC) -c -o $@ $<
 
-all: $(OUT) driver
+all: $(OUT) driver_serial_timer driver_posix_timer
 
 OBJS = hertz_gpuneighlist.o	hertz_wrapper.o
 
 $(OUT): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) $(OPENCL_INC) $(LIB) $(OPENCL) $(SHARED) -o $@ $^
 
-driver: driver.cpp
+driver_serial_timer: driver.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) $(OPENCL_INC) -I. -o $@ $^ $(LIB) -L. -lhertz $(OPENCL_LIB)
+
+driver_posix_timer: driver.cpp
+	$(CXX) $(CXXFLAGS) -DPOSIX_TIMER $(INCLUDEDIR) $(OPENCL_INC) -I. -o $@ $^ $(LIB) -L. -lhertz $(OPENCL_LIB) -lrt
 
 hertz_gpuneighlist.cpp hertz_wrapper.cpp:
 	../../pairgen.py hertz.yml
@@ -49,4 +52,4 @@ hertz_gpuneighlist.cpp hertz_wrapper.cpp:
 	mv -f new.hertz_pair_kernel.cl hertz_pair_kernel.cl
 
 clean:
-	rm -f hertz_* driver $(OUT)
+	rm -f hertz_* driver_*_timer $(OUT)

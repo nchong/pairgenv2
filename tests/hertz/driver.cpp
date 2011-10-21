@@ -10,7 +10,7 @@ void run(struct params *input, int num_iter) {
 
   one_time.push_back(SimpleTimer("initialization"));
   one_time.back().start();
-  size_t wx = 1024;
+  size_t wx = 256;
   HertzWrapper *hw = new HertzWrapper(
     clw, wx,
     input->nnode, nl->maxpage, nl->pgsize,

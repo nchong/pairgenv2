@@ -38,6 +38,8 @@ endif
 # FINALLY THE RULES
 OBJS = gpuneighlist.o
 
+all: .check-env $(OUT)
+
 $(OUT): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) $(OPENCL_INC) $(LIB) $(OPENCL) $(SHARED) -o $@ $^
 

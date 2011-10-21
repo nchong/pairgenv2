@@ -43,6 +43,9 @@ class GpuNeighList {
     //scans
     Scan *scan;
     SegmentedScan *segscan;
+    //timings
+    float tload; float tunload;
+    float tdecode;
 
   protected:
     template <class T>
@@ -50,7 +53,7 @@ class GpuNeighList {
       size_t size = pgsize*sizeof(T)*dim;
       for (int p=0; p<maxpage; p++) {
         size_t offset = p*size;
-        clw.memcpy_to_dev(d_mem, size, h_ptr[p], offset);
+        tload += clw.memcpy_to_dev(d_mem, size, h_ptr[p], offset);
       }
     }
     template <class T>
@@ -58,7 +61,7 @@ class GpuNeighList {
       size_t size = pgsize*sizeof(T)*dim;
       for (int p=0; p<maxpage; p++) {
         size_t offset = p*size;
-        clw.memcpy_from_dev(d_mem, size, h_ptr[p], offset);
+        tunload += clw.memcpy_from_dev(d_mem, size, h_ptr[p], offset);
       }
     }
     void resize(int new_maxpage);
@@ -71,6 +74,7 @@ class GpuNeighList {
     ~GpuNeighList();
     void reload(int *numneigh, int **firstneigh, int **pages, int reload_maxpage);
     int get_maxpage();
+    void get_timers(map<string,float> &timings);
 };
 
 #endif
