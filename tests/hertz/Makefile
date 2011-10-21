@@ -25,7 +25,7 @@ AMDAPP ?= /opt/AMDAPP/include
 	@if [ ! -d "${AMDAPP}" ]; then \
 		echo "ERROR: set AMDAPP variable."; exit 1; \
 	fi
-OPENCL_LIB = -l OpenCL 
+OPENCL_LIB = -lOpenCL
 OPENCL_INC = -I ${AMDAPP}
 SHARED = -shared
 endif

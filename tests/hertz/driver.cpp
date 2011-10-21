@@ -4,13 +4,12 @@
 using namespace std;
 
 void run(struct params *input, int num_iter) {
-  cout << clinfo();
   CLWrapper clw(/*platform=*/0,/*device=*/0,/*profiling=*/true);
   NeighListLike *nl = new NeighListLike(input);
 
   one_time.push_back(SimpleTimer("initialization"));
   one_time.back().start();
-  size_t wx = 256;
+  size_t wx = 1024;
   HertzWrapper *hw = new HertzWrapper(
     clw, wx,
     input->nnode, nl->maxpage, nl->pgsize,
