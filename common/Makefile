@@ -21,6 +21,7 @@ ifeq ($(UNAME), Darwin)
 OPENCL_LIB = -framework OpenCL
 OPENCL_INC =
 SHARED = -dynamiclib
+all: $(OUT)
 endif
 ifeq ($(UNAME), Linux)
 .PHONY: .check-env
@@ -33,12 +34,11 @@ AMDAPP ?= /opt/AMDAPP/include
 OPENCL_LIB = -l OpenCL
 OPENCL_INC = -I ${AMDAPP}
 SHARED = -shared
+all: .check-env $(OUT)
 endif
 
 # FINALLY THE RULES
 OBJS = gpuneighlist.o
-
-all: .check-env $(OUT)
 
 $(OUT): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INCLUDEDIR) $(OPENCL_INC) $(LIB) $(OPENCL) $(SHARED) -o $@ $^
