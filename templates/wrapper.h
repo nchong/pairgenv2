@@ -10,9 +10,10 @@ class {{ classname }}Wrapper {
     CLWrapper &clw;
     int N;
     size_t wx;
-    size_t gx;
+    size_t tpa_gx;
+    size_t bpa_gx;
 
-    // implementations
+    // decompositions
     cl_kernel tpa;
     cl_kernel bpa;
     
@@ -46,7 +47,9 @@ class {{ classname }}Wrapper {
       {% endfor -%}
     );
 
+    enum kernel_decomposition { TPA, BPA };
     void run(
+      kernel_decomposition kernel,
       {% for p in params -%}
         {%- if p.is_type('P', 'RO') and p.reload -%}
           {{ p.decl(pre='*h_', include_dim=False) }}{{ ',' if not loop.last }}

@@ -23,7 +23,7 @@ using namespace std;
       {{ p.decl(pre='*h_', include_dim=False) }}{{ ',' if not loop.last }}
     {% endfor -%}
   ) :
-  clw(clw), N(N), wx(wx), gx(wx * ((N/wx)+1)),
+  clw(clw), N(N), wx(wx), tpa_gx(wx * ((N/wx)+1)), bpa_gx(wx * N),
   d_nl(new {{ classname }}GpuNeighList(clw, wx, N, maxpage, pgsize))
 {
     {% for p in params if p.is_type('P', '-') -%}
@@ -38,13 +38,14 @@ using namespace std;
     extra_flags << " -D {{ c.hashdefine() }}=" << {{ c.name(pre='h_')}};
     {% endfor %}
 #if DEBUG
-    cerr << "[DEBUG] Kernel tpa parameters gx=" << gx << " wx=" << wx << endl;
     cerr << "[DEBUG] Compiling with extra_flags = [" << extra_flags.str() << "]" << endl;
+    cerr << "[DEBUG] Kernel TpA parameters gx=" << tpa_gx << " wx=" << wx << endl;
+    cerr << "[DEBUG] Kernel BpA parameters gx=" << bpa_gx << " wx=" << wx << endl;
 #endif
     clw.create_all_kernels(clw.compile("{{name}}_tpa_compute_kernel.cl", extra_flags.str()));
     tpa = clw.kernel_of_name("{{name}}_tpa_compute_kernel");
-  //clw.create_all_kernels(clw.compile("{{name}}_bpa_compute_kernel.cl"));
-  //bpa = clw.kernel_of_name("{{name}}_bpa_compute_kernel");
+    clw.create_all_kernels(clw.compile("{{name}}_bpa_compute_kernel.cl", extra_flags.str()));
+    bpa = clw.kernel_of_name("{{name}}_bpa_compute_kernel");
 }
 
 {{ classname }}Wrapper::~{{ classname }}Wrapper() {
@@ -71,6 +72,7 @@ void {{ classname }}Wrapper::refill_neighlist(
 }
 
 void {{ classname }}Wrapper::run(
+  kernel_decomposition kernel,
   {% for p in params -%}
     {%- if p.is_type('P', 'RO') and p.reload -%}
       {{ p.decl(pre='*h_', include_dim=False) }}{{ ',' if not loop.last }}
@@ -91,21 +93,47 @@ void {{ classname }}Wrapper::run(
   {% for p in params if p.is_type('P', 'RW') or p.is_type('P', 'SUM') -%}
     clw.memcpy_to_dev({{ memcpy_args(p) }});
   {% endfor %}
-  clw.kernel_arg(tpa,
-    N,
-    {% for p in params if p.is_type('P', 'RO') -%}
-    {{ p.devname() }},
-    {% endfor -%}
-    d_nl->d_numneigh, d_nl->d_pageidx, d_nl->d_offset, d_nl->pgsize, d_nl->d_neighidx,
-    {% for p in params if not p.is_type('P', 'RO') -%}
-      {%- if p.is_type('N', '-') -%}
-    d_nl->{{ p.devname() }}{{ ', ' if not loop.last }}
-      {%- else -%}
-    {{ p.devname() }}{{ ', ' if not loop.last }}
-      {%- endif -%}
-    {% endfor -%}
-  );
-  clw.run_kernel(tpa, /*dim=*/1, &gx, &wx);
+
+  if (kernel == TPA) {
+    clw.kernel_arg(tpa,
+      N,
+      {% for p in params if p.is_type('P', 'RO') -%}
+      {{ p.devname() }},
+      {% endfor -%}
+      d_nl->d_numneigh, d_nl->d_pageidx, d_nl->d_offset, d_nl->pgsize, d_nl->d_neighidx,
+      {% for p in params if not p.is_type('P', 'RO') -%}
+        {%- if p.is_type('N', '-') -%}
+      d_nl->{{ p.devname() }}{{ ', ' if not loop.last }}
+        {%- else -%}
+      {{ p.devname() }}{{ ', ' if not loop.last }}
+        {%- endif -%}
+      {% endfor -%}
+    );
+    clw.run_kernel(tpa, /*dim=*/1, &tpa_gx, &wx);
+  } else if (kernel == BPA) {
+    {% for p in params if p.is_type('P', 'SUM') %}
+    size_t {{ p.name(pre='l_', suf='_block_size') }} = wx*{{ p.dim }}*sizeof({{ p.type }});
+    {%- endfor %}
+    clw.kernel_arg(bpa,
+      N,
+      {% for p in params if p.is_type('P', 'RO') -%}
+      {{ p.devname() }},
+      {% endfor -%}
+      d_nl->d_numneigh, d_nl->d_pageidx, d_nl->d_offset, d_nl->pgsize, d_nl->d_neighidx,
+      {%- for p in params if not p.is_type('P', 'RO') %}
+        {%- if p.is_type('N', '-') %}
+      d_nl->{{ p.devname() }}{{ ', ' if not loop.last }}
+        {%- elif p.is_type('P', 'SUM') %}
+      {{ p.devname() }},
+      {{ p.name(pre='l_', suf='_block_size') }}{{ ', ' if not loop.last }}
+        {%- else %}
+      {{ p.devname() }}{{ ', ' if not loop.last }}
+        {%- endif -%}
+      {% endfor -%}
+    );
+    clw.run_kernel(bpa, /*dim=*/1, &bpa_gx, &wx);
+  }
+
   {% for p in params if p.is_type('P', 'RW') or p.is_type('P', 'SUM') -%}
     clw.memcpy_from_dev({{ memcpy_args(p) }});
   {% endfor %}

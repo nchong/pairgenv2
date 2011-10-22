@@ -40,6 +40,7 @@ void run(struct params *input, int num_iter) {
   for (int run=0; run<num_iter; run++) {
     per_iter[0].start();
     hw->run(
+      HertzWrapper::TPA,
       input->x,
       input->v,
       input->omega,
