@@ -42,10 +42,10 @@ using namespace std;
     cerr << "[DEBUG] Kernel TpA parameters gx=" << tpa_gx << " wx=" << wx << endl;
     cerr << "[DEBUG] Kernel BpA parameters gx=" << bpa_gx << " wx=" << wx << endl;
 #endif
-    clw.create_all_kernels(clw.compile("{{name}}_tpa_compute_kernel.cl", extra_flags.str()));
-    tpa = clw.kernel_of_name("{{name}}_tpa_compute_kernel");
-    clw.create_all_kernels(clw.compile("{{name}}_bpa_compute_kernel.cl", extra_flags.str()));
-    bpa = clw.kernel_of_name("{{name}}_bpa_compute_kernel");
+    clw.create_all_kernels(clw.compile("{{name}}_tpa.cl", extra_flags.str()));
+    tpa = clw.kernel_of_name("{{name}}_tpa");
+    clw.create_all_kernels(clw.compile("{{name}}_bpa.cl", extra_flags.str()));
+    bpa = clw.kernel_of_name("{{name}}_bpa");
 }
 
 {{ classname }}Wrapper::~{{ classname }}Wrapper() {

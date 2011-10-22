@@ -1,36 +1,52 @@
-#ifndef cl_khr_fp64
-#error "Double precision not supported on device."
-#endif
-#pragma OPENCL EXTENSION cl_khr_fp64: enable
-
-__constant double d_dt = CONSTANT_DT;
-__constant double d_nktv2p = CONSTANT_NKTV2P;
-__constant double d_yeff = CONSTANT_YEFF;
-__constant double d_geff = CONSTANT_GEFF;
-__constant double d_betaeff = CONSTANT_BETAEFF;
-__constant double d_coeffFrict = CONSTANT_COEFFFRICT;
+/*
+ * Pairwise interaction of particles i and j
+ *
+ * Read-only per-particle:
+ * 	xi, xj		(* position *)
+ * 	vi, vj
+ * 	omegai, omegaj
+ * 	radiusi, radiusj
+ * 	massi, massj
+ * 	typei, typej
+ * Read-write per-particle:
+ * 	--
+ * Sum-into per-particle:
+ * 	forcei_delta
+ * 	torquei_delta
+ *
+ * Read-only per-neighbor:
+ * 	--
+ * Read-write per-neighbor:
+ * 	shear
+ * 	touch
+ *
+ * Constants:
+ * 	D_DT		(* timestep *)
+ * 	D_NKTV2P
+ * 	D_YEFF
+ * 	D_GEFF
+ * 	D_BETAEFF
+ * 	D_COEFFFRICT
+ */
 
 #define sqrtFiveOverSix 0.91287092917527685576161630466800355658790782499663875
 
-inline void hertz_pair_kernel(
-  double xi[3], 
-  double xj[3], 
-  double vi[3], 
-  double vj[3], 
-  double omegai[3], 
-  double omegaj[3], 
-  double radiusi, 
-  double radiusj, 
-  double massi, 
-  double massj, 
-  int typei, 
-  int typej, 
-  double forcei_delta[3], 
-  double torquei_delta[3], 
-  double shear[3], 
-  int *touch
-  ) {
-
+#if defined(__CUDACC__)
+  __device__
+#else
+  inline
+#endif
+void hertz_pair_kernel(
+    double xi[3], double xj[3], 
+    double vi[3], double vj[3], 
+    double omegai[3], double omegaj[3], 
+    double radiusi, double radiusj, 
+    double massi, double massj, 
+    int typei, int typej, 
+    double forcei_delta[3], 
+    double torquei_delta[3], 
+    double shear[3], 
+    int *touch) {
   // del is the vector from j to i
   double delx = xi[0] - xj[0];
   double dely = xi[1] - xj[1];

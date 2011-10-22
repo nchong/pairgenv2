@@ -48,8 +48,8 @@ driver_posix_timer: driver.cpp
 
 hertz_gpuneighlist.cpp hertz_wrapper.cpp:
 	../../pairgen.py hertz.yml
-	cp reference.hertz_pair_kernel.cl new.hertz_pair_kernel.cl
-	mv -f new.hertz_pair_kernel.cl hertz_pair_kernel.cl
+	cp reference.hertz_kernel.h new.hertz_kernel.h
+	mv -f new.hertz_kernel.h hertz_kernel.h
 
 clean:
 	rm -f hertz_* driver_*_timer $(OUT)

@@ -17,8 +17,8 @@
   {%- endif -%}
 {% endmacro %}
 
-#ifndef {{ headername }}_TPA_COMPUTE_KERNEL_H
-#define {{ headername }}_TPA_COMPUTE_KERNEL_H
+#ifndef {{ headername }}_TPA_H
+#define {{ headername }}_TPA_H
 {% if cl_khr_fp64 %}
 #ifndef cl_khr_fp64
 #error "Double precision not supported on device."
@@ -45,7 +45,7 @@
  * NB: This kernel does not update any neighbor particles.
  *     Therefore the neighbor list must contain symmetric duplicates.
  */
-__kernel void {{name}}_tpa_compute_kernel(
+__kernel void {{name}}_tpa(
   int N, // number of particles
   {% for p in params if p.is_type('P', 'RO') -%}
   __global {{ p.type }} {{ p.devname(pre='*') }},
