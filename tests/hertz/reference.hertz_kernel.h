@@ -99,16 +99,16 @@ void hertz_pair_kernel(
     //Yeff, Geff, betaeff, coeffFrict are lookup tables
     double reff = radiusi * radiusj / (radiusi + radiusj);
     double sqrtval = sqrt(reff * deltan);
-    double Sn = 2.    * d_yeff * sqrtval;
-    double St = 8.    * d_geff * sqrtval;
-    double kn = 4./3. * d_yeff * sqrtval;
+    double Sn = 2.    * D_YEFF * sqrtval;
+    double St = 8.    * D_GEFF * sqrtval;
+    double kn = 4./3. * D_YEFF * sqrtval;
     double kt = St;
-    double gamman=-2.*sqrtFiveOverSix*d_betaeff*sqrt(Sn*meff);
-    double gammat=-2.*sqrtFiveOverSix*d_betaeff*sqrt(St*meff);
-    double xmu=d_coeffFrict;
+    double gamman=-2.*sqrtFiveOverSix*D_BETAEFF*sqrt(Sn*meff);
+    double gammat=-2.*sqrtFiveOverSix*D_BETAEFF*sqrt(St*meff);
+    double xmu=D_COEFFFRICT;
     //not-implemented if (dampflag == 0) gammat = 0;
-    kn /= d_nktv2p;
-    kt /= d_nktv2p;
+    kn /= D_NKTV2P;
+    kt /= D_NKTV2P;
 
     double damp = gamman*vnnr*rsqinv;
 	  double ccel = kn*(radsum-r)*rinv - damp;
@@ -121,9 +121,9 @@ void hertz_pair_kernel(
     double vtr3 = vt3 - (dely*wr1-delx*wr2);
 
     // shear history effects
-    shear[0] += vtr1 * d_dt;
-    shear[1] += vtr2 * d_dt;
-    shear[2] += vtr3 * d_dt;
+    shear[0] += vtr1 * D_DT;
+    shear[1] += vtr2 * D_DT;
+    shear[2] += vtr3 * D_DT;
 
     // rotate shear displacements
     double rsht = shear[0]*delx + shear[1]*dely + shear[2]*delz;
