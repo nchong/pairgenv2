@@ -1,9 +1,9 @@
-#include "{{name}}_gpuneighlist.h"
+#include "{{name}}_clneighlist.h"
 #include "clwrapper.h"
 #include "clerror.h"
 
-{{classname}}GpuNeighList::{{classname}}GpuNeighList(CLWrapper &clw, size_t wx, int nparticles, int maxpage, int pgsize) : 
-  GpuNeighList(clw, wx, nparticles, maxpage, pgsize) {
+{{classname}}CLNeighList::{{classname}}CLNeighList(CLWrapper &clw, size_t wx, int nparticles, int maxpage, int pgsize) : 
+  CLNeighList(clw, wx, nparticles, maxpage, pgsize) {
   {% for p in params if p.is_type('N', '-') -%}
   {{ p.devname(suf='_size') }} = {{ p.sizeof() }};
   {% endfor %}
@@ -12,13 +12,13 @@
   {% endfor %}
 }
 
-{{classname}}GpuNeighList::~{{classname}}GpuNeighList() {
+{{classname}}CLNeighList::~{{classname}}CLNeighList() {
   {% for p in params if p.is_type('N', '-') -%}
   clw.dev_free({{ p.devname() }});
   {% endfor %}
 }
 
-void {{classname}}GpuNeighList::reload(int *numneigh, int **firstneigh, int **pages, int reload_maxpage
+void {{classname}}CLNeighList::reload(int *numneigh, int **firstneigh, int **pages, int reload_maxpage
   {% for p in params if p.is_type('N', '-') -%}
     , {{ p.pages() }}
   {% endfor %}
@@ -36,14 +36,14 @@ void {{classname}}GpuNeighList::reload(int *numneigh, int **firstneigh, int **pa
     {% endfor %}
     maxpage = reload_maxpage;
   }
-  GpuNeighList::reload(numneigh, firstneigh, pages, maxpage);
+  CLNeighList::reload(numneigh, firstneigh, pages, maxpage);
   {% for p in params if p.is_type('N', '-') -%}
   load_pages({{ p.devname() }}, {{ p.name(pre='h_', suf='pages') }}, /*dim=*/{{ p.dim }});
   {% endfor %}
 }
 
 {% for p in params if p.is_type('N', '-') %}
-void {{classname}}GpuNeighList::unload_{{ p.name() }}({{ p.pages() }}) {
+void {{classname}}CLNeighList::unload_{{ p.name() }}({{ p.pages() }}) {
   unload_pages({{ p.name(pre='d_') }}, {{ p.name(pre='h_', suf='pages') }}, /*dim=*/{{ p.dim }});
 }
 {% endfor %}

@@ -1,9 +1,9 @@
-#ifndef {{ headername }}_GPUNEIGHLIST_H
-#define {{ headername }}_GPUNEIGHLIST_H
+#ifndef {{ headername }}_CLNEIGHLIST_H
+#define {{ headername }}_CLNEIGHLIST_H
 
-#include "gpuneighlist.h"
+#include "clneighlist.h"
 
-class {{classname}}GpuNeighList : public GpuNeighList {
+class {{classname}}CLNeighList : public CLNeighList {
   private:
     {% for p in params if p.is_type('N', '-') -%}
       size_t {{ p.devname(suf='_size') }};
@@ -13,8 +13,8 @@ class {{classname}}GpuNeighList : public GpuNeighList {
       cl_mem {{ p.devname() }};
     {% endfor %}
 
-    {{classname}}GpuNeighList(CLWrapper &clw, size_t wx, int nparticles, int maxpage, int pgsize);
-    ~{{classname}}GpuNeighList();
+    {{classname}}CLNeighList(CLWrapper &clw, size_t wx, int nparticles, int maxpage, int pgsize);
+    ~{{classname}}CLNeighList();
 
     void reload(int *numneigh, int **firstneigh, int **pages, int reload_maxpage
       {%- for p in params if p.is_type('N', '-') -%}

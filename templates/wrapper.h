@@ -2,7 +2,7 @@
 #define {{ headername }}_WRAPPER_H
 
 #include "clwrapper.h"
-#include "{{ name }}_gpuneighlist.h"
+#include "{{ name }}_clneighlist.h"
 
 class {{ classname }}Wrapper {
   private:
@@ -21,7 +21,7 @@ class {{ classname }}Wrapper {
     {%- for p in params if p.is_type('P', '-') %}
     cl_mem {{ p.devname() }};
     {%- endfor %}
-    {{ classname }}GpuNeighList *d_nl;
+    {{ classname }}CLNeighList *d_nl;
 
   public:
     {{ classname }}Wrapper(

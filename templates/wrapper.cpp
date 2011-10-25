@@ -4,7 +4,7 @@
   {{- p.name(pre='h_') -}}
 {%- endmacro -%}
 #include "{{ name }}_wrapper.h"
-#include "{{ name }}_gpuneighlist.h"
+#include "{{ name }}_clneighlist.h"
 #include <cassert>
 #include <cstdlib>
 #include <cstdio>
@@ -24,7 +24,7 @@ using namespace std;
     {% endfor -%}
   ) :
   clw(clw), N(N), wx(wx), tpa_gx(wx * ((N/wx)+1)), bpa_gx(wx * N),
-  d_nl(new {{ classname }}GpuNeighList(clw, wx, N, maxpage, pgsize))
+  d_nl(new {{ classname }}CLNeighList(clw, wx, N, maxpage, pgsize))
 {
     {% for p in params if p.is_type('P', '-') -%}
     {{ p.devname() }} = clw.dev_malloc({{ p.sizeof() }});
