@@ -32,7 +32,7 @@ void {{classname}}CLNeighList::reload(int *numneigh, int **firstneigh, int **pag
     {{ p.devname(suf='_size') }} = reload_maxpage*pgsize*{{ p.dim }}*sizeof({{ p.type }});
   {% endfor %}
     {% for p in params if p.is_type('N', '-') -%}
-    {{ p.name(pre='d_') }} = clw.dev_malloc({{ p.devname(suf='_size') }});
+    {{ p.devname() }} = clw.dev_malloc({{ p.devname(suf='_size') }});
     {% endfor %}
     maxpage = reload_maxpage;
   }
