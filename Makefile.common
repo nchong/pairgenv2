@@ -1,0 +1,61 @@
+# COMPILER
+ifeq ($(CXX), icc)
+CXX = icc
+override CXXFLAGS += -O2
+override CXXFLAGS += -Wall -Wcheck
+else
+CXX = g++
+override CXXFLAGS += -O2
+override CXXFLAGS += -Wall -Wextra -Werror -pedantic -Wno-variadic-macros
+endif
+LOG_LEVEL = LOG_WARN
+override CXXFLAGS += -DLOG_LEVEL=$(LOG_LEVEL)
+override CXXFLAGS += -fPIC
+
+NVCC = nvcc
+override NVCCFLAGS += -m64 -Xcompiler "-Wall -fPIC"
+
+# OPENCL AND CUDA
+UNAME := $(shell uname)
+ifeq ($(UNAME), Darwin)
+SHARED = -dynamiclib
+OPENCL_LIB = -framework OpenCL
+OPENCL_INC =
+.PHONY: .check-opencl-env
+.check-opencl-env:
+	true
+endif
+ifeq ($(UNAME), Linux)
+SHARED = -shared
+OPENCL_LIB = -lOpenCL
+OPENCL_INC = -I $(CLDIR)
+.PHONY: .check-opencl-env
+.check-opencl-env:
+	@if [ ! -d "$(CLDIR)" ]; then \
+		echo "ERROR: set CLDIR variable."; exit 1; \
+	fi
+all: .check-opencl-env
+endif
+
+.PHONY: .check-cuda-env
+.check-cuda-env:
+	@if [ ! -d "$(CUDADIR)" ]; then \
+		echo "ERROR: set CUDADIR variable."; exit 1; \
+	fi
+CUDA_LIB = -L$(CUDADIR)/lib -lcuda -lcudart
+CUDA_INC = -I $(CUDADIR)/include
+all: .check-cuda-env
+
+# COMMON INCLUDE AND LIBS
+INC = -I$(TOP)/../inc
+INC += $(OPENCL_INC)
+INC += $(CUDA_INC)
+LIB = -L$(TOP)/../lib -lclwrapper -lscan -lcommon 
+LIB += $(OPENCL_LIB)
+LIB += $(CUDA_LIB)
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) $(INC) -c -o $@ $<
+
+%.o: %.cu
+	$(NVCC) $(NVCCFLAGS) $(INC) -c -o $@ $<
