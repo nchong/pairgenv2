@@ -1,11 +1,11 @@
 #include "cudaneighlist.h"
+#include "scanref.h"
+
 #include "thrust/scan.h"
 
-#define PARANOID true
-#if PARANOID
-#include "scanref.h"
 #include <cassert>
-#endif
+
+#define PARANOID false
 
 __global__ void decode_neighlist_p1(
   //inputs

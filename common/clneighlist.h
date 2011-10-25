@@ -1,14 +1,14 @@
-#ifndef GPUNEIGHLIST_H
-#define GPUNEIGHLIST_H
+#ifndef CLNEIGHLIST_H
+#define CLNEIGHLIST_H
 
 #include "clwrapper.h"
 #include "scan.h"
 #include "segscan.h"
 
 /*
- *
+ * OpenCL Neighbor List manager
  */
-class GpuNeighList {
+class CLNeighList {
   protected:
     //opencl wrapper
     CLWrapper &clw;
@@ -70,8 +70,8 @@ class GpuNeighList {
     void check_decode(int *numneigh, int **firstneigh, int **pages);
 
   public:
-    GpuNeighList(CLWrapper &clw, size_t wx, int nparticles, int maxpage, int pgsize);
-    ~GpuNeighList();
+    CLNeighList(CLWrapper &clw, size_t wx, int nparticles, int maxpage, int pgsize);
+    ~CLNeighList();
     void reload(int *numneigh, int **firstneigh, int **pages, int reload_maxpage);
     int get_maxpage();
     void get_timers(map<string,float> &timings);

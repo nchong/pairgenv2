@@ -1,14 +1,13 @@
-#include "gpuneighlist.h"
+#include "clneighlist.h"
 #include "scan.h"
 #include "scanref.h"
 #include "segscan.h"
 
 #include <cassert>
-#include <cstdio>
 
 #define PARANOID false
 
-GpuNeighList::GpuNeighList(CLWrapper &clw, size_t wx,
+CLNeighList::CLNeighList(CLWrapper &clw, size_t wx,
   int nparticles, int maxpage, int pgsize) :
 
   clw(clw), wx(wx),
@@ -47,7 +46,7 @@ GpuNeighList::GpuNeighList(CLWrapper &clw, size_t wx,
   decode_neighlist_p1 = clw.kernel_of_name("decode_neighlist_p1");
 }
 
-GpuNeighList::~GpuNeighList() {
+CLNeighList::~CLNeighList() {
   clw.dev_free(d_numneigh);
   clw.dev_free(d_firstneigh);
   clw.dev_free(d_pages);
@@ -56,7 +55,7 @@ GpuNeighList::~GpuNeighList() {
   clw.dev_free(d_neighidx);
 }
 
-void GpuNeighList::get_timers(map<string,float> &timings) {
+void CLNeighList::get_timers(map<string,float> &timings) {
   if (clw.has_profiling()) {
     timings.insert(make_pair("GPUNL1. load pages   ", tload));
     timings.insert(make_pair("GPUNL2. unload pages ", tunload));
@@ -69,7 +68,7 @@ void GpuNeighList::get_timers(map<string,float> &timings) {
 /*
  * NB: does not update maxpage!
  */
-void GpuNeighList::resize(int new_maxpage) {
+void CLNeighList::resize(int new_maxpage) {
   clw.dev_free(d_pages);
   clw.dev_free(d_neighidx);
   d_pages_size = new_maxpage * sizeof(int *);
@@ -78,7 +77,7 @@ void GpuNeighList::resize(int new_maxpage) {
   d_neighidx = clw.dev_malloc(d_neighidx_size, CL_MEM_READ_ONLY);
 }
 
-void GpuNeighList::reload(int *numneigh, int **firstneigh, int **pages, int reload_maxpage) {
+void CLNeighList::reload(int *numneigh, int **firstneigh, int **pages, int reload_maxpage) {
   // nb: we do not expect nparticles or pgsize to change
   // resize if necessary
   if (maxpage < reload_maxpage) {
@@ -126,13 +125,11 @@ void GpuNeighList::reload(int *numneigh, int **firstneigh, int **pages, int relo
   }
 
 #if PARANOID
-    printf("Running checks...");
     check_decode(numneigh, firstneigh, pages);
-    printf("done\n");
 #endif
 }
 
-void GpuNeighList::check_decode(int *numneigh, int **firstneigh, int **pages) {
+void CLNeighList::check_decode(int *numneigh, int **firstneigh, int **pages) {
   if (maxpage == 1) {
     // simulate segmented scan
     int *expected_offset = new int[nparticles];
