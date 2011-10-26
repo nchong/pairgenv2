@@ -108,6 +108,12 @@ void {{ classname }}CudaWrapper::run(
     cudaMemcpy({{ memcpy_to_dev_args(p) }});
   {% endfor %}
 
+  cudaThreadSynchronize();
+  cudaError_t err = cudaGetLastError();
+  if (err != cudaSuccess) {
+    printf("Pre-compute-kernel error: %s.\n", cudaGetErrorString(err));
+    exit(1);
+  }
   if (kernel == TPA) {
     {{ name }}_tpa<<<tpa_grid_size, block_size>>>(
       N,
@@ -138,6 +144,12 @@ void {{ classname }}CudaWrapper::run(
         {%- endif -%}
       {% endfor -%}
     );
+  }
+  cudaThreadSynchronize();
+  err = cudaGetLastError();
+  if (err != cudaSuccess) {
+    printf("Post-compute-kernel error: %s.\n", cudaGetErrorString(err));
+    exit(1);
   }
 
   {% for p in params if p.is_type('P', 'RW') or p.is_type('P', 'SUM') -%}
