@@ -1,12 +1,19 @@
 #include "framework.h"
 #include "hertz_cudawrapper.h"
 
+#ifndef BLOCK_SIZE
+#error "You need to #define BLOCK_SIZE"
+#endif
+#ifndef KERNEL
+#error "You need to #define KERNEL TPA|BPA"
+#endif
+
 using namespace std;
 
 void run(struct params *input, int num_iter) {
   NeighListLike *nl = new NeighListLike(input);
 
-  int block_size = 1;
+  int block_size = BLOCK_SIZE;
   one_time.push_back(SimpleTimer("initialization"));
   one_time.back().start();
   HertzCudaWrapper *hw = new HertzCudaWrapper(
@@ -39,7 +46,7 @@ void run(struct params *input, int num_iter) {
   for (int run=0; run<num_iter; run++) {
     per_iter[0].start();
     hw->run(
-      HertzCudaWrapper::TPA,
+      HertzCudaWrapper::KERNEL,
       input->x,
       input->v,
       input->omega,

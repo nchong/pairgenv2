@@ -1,6 +1,13 @@
 #include "framework.h"
 #include "hertz_wrapper.h"
 
+#ifndef BLOCK_SIZE
+#error "You need to #define BLOCK_SIZE"
+#endif
+#ifndef KERNEL
+#error "You need to #define KERNEL TPA|BPA"
+#endif
+
 using namespace std;
 
 void run(struct params *input, int num_iter) {
@@ -9,7 +16,7 @@ void run(struct params *input, int num_iter) {
 
   one_time.push_back(SimpleTimer("initialization"));
   one_time.back().start();
-  size_t wx = 1024;
+  size_t wx = BLOCK_SIZE;
   HertzWrapper *hw = new HertzWrapper(
     clw, wx,
     input->nnode, nl->maxpage, nl->pgsize,
@@ -40,7 +47,7 @@ void run(struct params *input, int num_iter) {
   for (int run=0; run<num_iter; run++) {
     per_iter[0].start();
     hw->run(
-      HertzWrapper::TPA,
+      HertzWrapper::KERNEL,
       input->x,
       input->v,
       input->omega,
