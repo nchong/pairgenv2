@@ -12,8 +12,8 @@ LOG_LEVEL = LOG_WARN
 override CXXFLAGS += -DLOG_LEVEL=$(LOG_LEVEL)
 override CXXFLAGS += -fPIC
 
-NVCC = nvcc
-override NVCCFLAGS += -m64 -Xcompiler "-Wall -fPIC"
+NVCC = $(CUDADIR)/bin/nvcc
+override NVCCFLAGS += -O2 -Xcompiler "-Wall -fPIC" -arch sm_13
 
 # OPENCL AND CUDA
 UNAME := $(shell uname)
