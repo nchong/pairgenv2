@@ -4,6 +4,7 @@
   {{ c.type }} {{ c.devname() }};
 {% endfor %}
 
+#include <cmath>
 #include "{{ name }}_kernel.h"
 
 #endif
