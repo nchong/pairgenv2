@@ -109,7 +109,7 @@ void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int rel
 
   if (maxpage == 1) {
     thrust::exclusive_scan(thrust_numneigh, thrust_numneigh + nparticles, thrust_offset);
-    cudaMemset(d_pageidx, 0, d_pages_size);
+    cudaMemset(d_pageidx, 0, d_pageidx_size);
   } else {
     cudaMemcpy(d_firstneigh, firstneigh, d_firstneigh_size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_pages, pages, d_pages_size, cudaMemcpyHostToDevice);
