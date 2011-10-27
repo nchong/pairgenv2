@@ -154,8 +154,8 @@ __kernel void {{name}}_bpa(
   barrier(CLK_LOCAL_MEM_FENCE);
 
   // local reduction and writeback of per-particle data
-  if (idx < N && nneigh > 0 && lid == 0) {
-    for (int i=1; i<nneigh; i++) {
+  if (idx < N && nneigh > 1 && lid == 0) {
+    for (int i=1; i<block_size; i++) {
       {%- for p in params if p.is_type('P', 'SUM') %}
         {%- if p.dim > 1 %}
           {%- for k in range(p.dim) %}
@@ -171,7 +171,7 @@ __kernel void {{name}}_bpa(
     {%- for p in params if p.is_type('P', 'SUM') %}
       {%- if p.dim > 1 %}
         {%- for k in range(p.dim) %}
-    {{ p.name(pre='d_') }}[idx*{{ p.dim }}+{{ k }}] += {{ p.name(suf='i_delta') }}[{{ k }}];
+    {{ p.name(pre='d_') }}[(idx*{{ p.dim }})+{{ k }}] += {{ p.name(suf='i_delta') }}[{{ k }}];
         {%- endfor %}
       {%- else %}
     {{ p.name(pre='d_') }}[idx] += {{ p.name(suf='i_delta') }};
