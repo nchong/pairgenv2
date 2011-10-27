@@ -80,26 +80,16 @@ __global__ void {{name}}_bpa(
     {%- endfor -%}
   {% endfor %}
 
+  int tid = threadIdx.x;
   int idx = blockIdx.x;
-  int nneigh = numneigh[idx];
   int block_size = blockDim.x;
-
-  for (int jj=threadIdx.x; jj<nneigh; jj+=block_size) {
-    {% for p in params if p.is_type('P', 'SUM') %}
-    {{- "// block-level per-particle SUM data" if loop.first -}}
-      {%- if p.dim > 1 %}
-        {%- for k in range(p.dim) %}
-    {{ p.name(pre='l_', suf='_block') }}[(jj*{{ p.dim }})+{{ k }}] = 0;
-        {%- endfor %}
-      {%- else %}
-    {{ p.name(pre='l_', suf='_block') }}[jj] = 0;
-      {%- endif %}
-    {%- else -%}
-    {%- endfor %}
-  }
+  int nneigh = numneigh[idx];
+  int mypage = pageidx[idx];
+  int myoffset = offset[idx];
+  int nidx_base = (mypage*pgsize) + myoffset;
 
   {% for p in params if p.is_type('P', 'SUM') %}
-  {{- "// thread-local per-particle SUM data" if loop.first -}}
+  {{- "// per-thread accumulators" if loop.first -}}
     {%- if p.dim > 1 %}
   {{ p.type }} {{ p.name(suf='i_delta') }}[{{ p.dim }}] = {{ p.additive_id() }};
     {%- else %}
@@ -108,26 +98,25 @@ __global__ void {{name}}_bpa(
   {%- else -%}
   {%- endfor %}
 
-  if (idx < N && nneigh > 0) {
-    for (int jj=threadIdx.x; jj<nneigh; jj+=block_size) {
-      {% for p in params if p.is_type('P', 'RO') %}
-      {{- "// per-particle RO data" if loop.first -}}
-        {{- assign(p, 'i', 'idx')|indent(2) -}}
-      {%- else -%}
-      {%- endfor %}
-      {#- TODO: DEAL WITH P,RW DATA #}
+  // load particle i data
+  {% for p in params if p.is_type('P', 'RO') %}
+  {{- "// per-particle RO data" if loop.first -}}
+  {{- assign(p, 'i', 'idx') -}}
+  {%- else -%}
+  {%- endfor %}
+  {#- TODO: DEAL WITH P,RW DATA #}
 
+  if (idx < N && nneigh > 0) {
+    for (int jj=tid; jj<nneigh; jj+=block_size) {
       // load particle j data
-      int mypage = pageidx[idx];
-      int myoffset = offset[idx];
-      int nidx = (mypage*pgsize) + myoffset + jj;
+      int nidx = nidx_base + jj;
       int j = neighidx[nidx];
       {%- for p in params if p.is_type('P', 'RO') %}
       {{- assign(p, 'j', 'j')|indent(2) -}}
       {%- endfor %}
       {# not possible to load per-particle j data #}
-      // load neighbor(i,j) data
       {%- for p in params if p.is_type('N', '-') %}
+      {{- "// load per-neighbor data" if loop.first -}}
       {{- assign(p, '', 'nidx')|indent(2) -}}
       {%- endfor %}
 
@@ -154,21 +143,21 @@ __global__ void {{name}}_bpa(
   }
 
   {% for p in params if p.is_type('P', 'SUM') %}
-  {{- "// write per-particle SUM data into block-shared arrays" if loop.first -}}
+  {{- "// write per-thread accumulators into block-local arrays" if loop.first -}}
     {%- if p.dim > 1 %}
       {%- for k in range(p.dim) %}
-  {{ p.name(pre='l_', suf='_block') }}[(threadIdx.x*{{ p.dim }})+{{ k }}] = {{ p.name(suf='i_delta') }}[{{ k }}];
+  {{ p.name(pre='l_', suf='_block') }}[(tid*{{ p.dim }})+{{ k }}] = {{ p.name(suf='i_delta') }}[{{ k }}];
       {%- endfor %}
     {%- else %}
-  {{ p.name(pre='l_', suf='_block') }}[threadIdx.x] = {{ p.name(suf='i_delta') }};
+  {{ p.name(pre='l_', suf='_block') }}[tid] = {{ p.name(suf='i_delta') }};
     {%- endif %}
   {%- else -%}
   {%- endfor %}
 
   __syncthreads();
 
-  // local reduce
-  if (idx < N && nneigh > 0 && threadIdx.x == 0) {
+  // local reduction and writeback of per-particle data
+  if (idx < N && nneigh > 0 && tid == 0) {
     for (int i=1; i<nneigh; i++) {
       {%- for p in params if p.is_type('P', 'SUM') %}
         {%- if p.dim > 1 %}

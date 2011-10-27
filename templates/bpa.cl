@@ -69,61 +69,52 @@ __kernel void {{name}}_bpa(
   {%- endif %}
   {%- endfor -%}
   ) {
-  // register copies of particle and neighbor data
+  // register copies of per-particle and per-neighbor data
   {%- for p in params if not p.is_type('P', 'SUM') -%}
     {%- for n in p.tagged_name() %}
   {{ p.type }} {{ n }}{{ "[%d]" % p.dim if p.dim == 3 }};
     {%- endfor -%}
   {% endfor %}
 
+  int lid = get_local_id(0);
   int idx = get_group_id(0);
-  int nneigh = numneigh[idx];
   int block_size = get_local_size(0);
+  int nneigh = numneigh[idx];
+  int mypage = pageidx[idx];
+  int myoffset = offset[idx];
+  int nidx_base = (mypage*pgsize) + myoffset;
 
-  for (int jj=get_local_id(0); jj<nneigh; jj+= block_size) {
-    {% for p in params if p.is_type('P', 'SUM') %}
-    {{- "// per-particle SUM data" if loop.first -}}
-      {%- if p.dim > 1 %}
-        {%- for k in range(p.dim) %}
-    {{ p.name(pre='l_', suf='_block') }}[(jj*{{ p.dim }})+{{ k }}] = 0;
-        {%- endfor %}
-      {%- else %}
-    {{ p.name(pre='l_', suf='_block') }}[jj] = 0;
-      {%- endif %}
-    {%- else -%}
-    {%- endfor %}
-  }
+  {% for p in params if p.is_type('P', 'SUM') %}
+  {{- "// per-thread accumulators" if loop.first -}}
+    {%- if p.dim > 1 %}
+  {{ p.type }} {{ p.name(suf='i_delta') }}[{{ p.dim }}] = {{ p.additive_id() }};
+    {%- else %}
+  {{ p.type }} {{ p.name(suf='i_delta') }} = {{ p.additive_id() }};
+    {%- endif %}
+  {%- else -%}
+  {%- endfor %}
+
+  // load particle i data
+  {% for p in params if p.is_type('P', 'RO') %}
+  {{- "// per-particle RO data" if loop.first -}}
+  {{- assign(p, 'i', 'idx') -}}
+  {%- else -%}
+  {%- endfor %}
+  {#- TODO: DEAL WITH P,RW DATA #}
 
   if (idx < N && nneigh > 0) {
-    for (int jj=get_local_id(0); jj<nneigh; jj+= block_size) {
-      {% for p in params if p.is_type('P', 'RO') %}
-      {{- "// per-particle RO data" if loop.first -}}
-        {{- assign(p, 'i', 'idx')|indent(2) -}}
-      {%- else -%}
-      {%- endfor %}
-      {#- TODO: DEAL WITH P,RW DATA #}
-      {% for p in params if p.is_type('P', 'SUM') %}
-      {{- "// per-particle SUM data" if loop.first -}}
-        {%- if p.dim > 1 %}
-      {{ p.type }} {{ p.name(suf='i_delta') }}[{{ p.dim }}] = {{ p.additive_id() }};
-        {%- else %}
-      {{ p.type }} {{ p.name(suf='i_delta') }} = {{ p.additive_id() }};
-        {%- endif %}
-      {%- else -%}
-      {%- endfor %}
-
+    for (int jj=lid; jj<nneigh; jj+= block_size) {
       // load particle j data
-      int mypage = pageidx[idx];
-      int myoffset = offset[idx];
-      int nidx = (mypage*pgsize) + myoffset + jj;
+      int nidx = nidx_base + jj;
       int j = neighidx[nidx];
       {%- for p in params if p.is_type('P', 'RO') %}
       {{- assign(p, 'j', 'j')|indent(2) -}}
       {%- endfor %}
       {# not possible to load per-particle j data #}
-      // load neighbor(i,j) data
-      {%- for p in params if p.is_type('N', '-') %}
+      {% for p in params if p.is_type('N', '-') %}
+      {{- "// load per-neighbor data" if loop.first -}}
       {{- assign(p, '', 'nidx')|indent(2) -}}
+      {%- else -%}
       {%- endfor %}
 
       // do pairwise calculation
@@ -145,34 +136,26 @@ __kernel void {{name}}_bpa(
       {%- for p in params if p.is_type('N', 'RW') -%}
         {{- assigninv(p,'','nidx')|indent(2) -}}
       {%- endfor %}
-
-      {% for p in params if p.is_type('P', 'SUM') %}
-      {{- "// write per-particle SUM data into block-shared arrays" if loop.first -}}
-        {%- if p.dim > 1 %}
-          {%- for k in range(p.dim) %}
-      {{ p.name(pre='l_', suf='_block') }}[(jj*{{ p.dim }})+{{ k }}] = {{ p.name(suf='i_delta') }}[{{ k }}];
-          {%- endfor %}
-        {%- else %}
-      {{ p.name(pre='l_', suf='_block') }}[jj] = {{ p.name(suf='i_delta') }};
-        {%- endif %}
-      {%- else -%}
-      {%- endfor %}
     }
   }
 
+  {% for p in params if p.is_type('P', 'SUM') %}
+  {{- "// write per-thread accumulators into block-local arrays" if loop.first -}}
+    {%- if p.dim > 1 %}
+      {%- for k in range(p.dim) %}
+  {{ p.name(pre='l_', suf='_block') }}[(lid*{{ p.dim }})+{{ k }}] = {{ p.name(suf='i_delta') }}[{{ k }}];
+      {%- endfor %}
+    {%- else %}
+  {{ p.name(pre='l_', suf='_block') }}[lid] = {{ p.name(suf='i_delta') }};
+    {%- endif %}
+  {%- else -%}
+  {%- endfor %}
+
   barrier(CLK_LOCAL_MEM_FENCE);
 
-  // local reduce
-  if (idx < N && nneigh > 0 && get_local_id(0) == 0) {
-    {%- for p in params if p.is_type('P', 'SUM') %}
-      {%- if p.dim > 1 %}
-    {{ p.type }} {{ p.name(suf='i_delta') }}[{{ p.dim }}] = {{ p.additive_id() }};
-      {%- else %}
-    {{ p.type }} {{ p.name(suf='i_delta') }} = {{ p.additive_id() }};
-      {%- endif %}
-    {%- else -%}
-    {%- endfor %}
-    for (int i=0; i<nneigh; i++) {
+  // local reduction and writeback of per-particle data
+  if (idx < N && nneigh > 0 && lid == 0) {
+    for (int i=1; i<nneigh; i++) {
       {%- for p in params if p.is_type('P', 'SUM') %}
         {%- if p.dim > 1 %}
           {%- for k in range(p.dim) %}
