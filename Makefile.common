@@ -28,7 +28,7 @@ endif
 ifeq ($(UNAME), Linux)
 SHARED = -shared
 OPENCL_LIB = -lOpenCL
-OPENCL_INC = -I $(CLDIR)
+OPENCL_INC = -I $(CLDIR)/include
 .PHONY: .check-opencl-env
 .check-opencl-env:
 	@if [ ! -d "$(CLDIR)" ]; then \
@@ -42,7 +42,7 @@ endif
 	@if [ ! -d "$(CUDADIR)" ]; then \
 		echo "ERROR: set CUDADIR variable."; exit 1; \
 	fi
-CUDA_LIB = -L$(CUDADIR)/lib -lcuda -lcudart
+CUDA_LIB = -L$(CUDADIR)/lib64 -lcuda -lcudart
 CUDA_INC = -I $(CUDADIR)/include
 all: .check-cuda-env
 

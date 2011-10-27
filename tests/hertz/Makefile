@@ -14,7 +14,7 @@ OBJS = hertz_clneighlist.o hertz_wrapper.o
 OBJS += hertz_cudaneighlist.o hertz_cudawrapper.o
 
 $(SERIAL_OUT): serialdriver.cpp hertz_kernel.h
-	$(CXX) $(CXXFLAGS) $(INC) $(LIB) -o $@ $<
+	$(CXX) $(CXXFLAGS) -DPOSIX_TIMER $(INC) $(LIB) -o $@ $<
 
 $(OUT): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INC) $(LIB) $(SHARED) -o $@ $^
