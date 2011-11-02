@@ -17,7 +17,7 @@ $(SERIAL_OUT): serialdriver.cpp hertz_kernel.h
 	$(CXX) $(CXXFLAGS) -DPOSIX_TIMER $(INC) $(LIB) -o $@ $<
 
 $(OUT): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(INC) $(LIB) $(SHARED) -o $@ $^
+	$(CXX) $(CXXFLAGS) $(INC) $(SHARED) -o $@ $^ $(LIB)
 
 cl_tpa: driver.cpp $(OUT)
 	$(CXX) -DBLOCK_SIZE=128 -DKERNEL=TPA -DPOSIX_TIMER $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt

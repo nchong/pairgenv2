@@ -11,6 +11,7 @@
 using namespace std;
 
 void run(struct params *input, int num_iter) {
+  //cout << clinfo();
   CLWrapper clw(/*platform=*/0,/*device=*/0,/*profiling=*/true);
   NeighListLike *nl = new NeighListLike(input);
 
