@@ -27,7 +27,7 @@ OPENCL_INC =
 endif
 ifeq ($(UNAME), Linux)
 SHARED = -shared
-OPENCL_LIB = -lOpenCL
+OPENCL_LIB = -L$(CLDIR)/lib -lOpenCL
 OPENCL_INC = -I $(CLDIR)/include
 .PHONY: .check-opencl-env
 .check-opencl-env:
