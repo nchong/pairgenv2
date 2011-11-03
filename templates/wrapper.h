@@ -4,6 +4,10 @@
 #include "clwrapper.h"
 #include "{{ name }}_clneighlist.h"
 
+double get_m0();
+double get_k0();
+double get_m1();
+
 class {{ classname }}Wrapper {
   private:
     // OpenCL parameters

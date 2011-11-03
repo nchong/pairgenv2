@@ -3,6 +3,10 @@
 
 #include "{{ name }}_cudaneighlist.h"
 
+double get_cuda_m0();
+double get_cuda_k0();
+double get_cuda_m1();
+
 class {{ classname }}CudaWrapper {
   private:
     int block_size;

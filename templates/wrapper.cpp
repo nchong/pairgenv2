@@ -11,6 +11,14 @@
 #include <sstream>
 #include <iostream>
 
+#include "posix_timer.h"
+static SimpleTimer m0;
+static SimpleTimer k0;
+static SimpleTimer m1;
+double get_m0() { return m0.total_time(); }
+double get_k0() { return k0.total_time(); }
+double get_m1() { return m1.total_time(); }
+
 using namespace std;
 
 {{ classname }}Wrapper::{{ classname }}Wrapper(
@@ -87,13 +95,16 @@ void {{ classname }}Wrapper::run(
     {%- endif %}
   {% endfor -%}
 ) {
+  m0.start();
   {% for p in params if p.is_type('P', '-') and p.reload -%}
     clw.memcpy_to_dev({{ memcpy_args(p) }});
   {% endfor -%}
   {% for p in params if p.is_type('P', 'RW') or p.is_type('P', 'SUM') -%}
     clw.memcpy_to_dev({{ memcpy_args(p) }});
   {% endfor %}
+  m0.stop_and_add_to_total();
 
+  k0.start();
   if (kernel == TPA) {
     clw.kernel_arg(tpa,
       N,
@@ -133,7 +144,10 @@ void {{ classname }}Wrapper::run(
     );
     clw.run_kernel(bpa, /*dim=*/1, &bpa_gx, &wx);
   }
+  clw.flush_command_queue();
+  k0.stop_and_add_to_total();
 
+  m1.start();
   {% for p in params if p.is_type('P', 'RW') or p.is_type('P', 'SUM') -%}
     clw.memcpy_from_dev({{ memcpy_args(p) }});
   {% endfor %}
@@ -143,5 +157,6 @@ void {{ classname }}Wrapper::run(
     d_nl->unload_{{ p.name() }}({{ p.name(pre='h_',suf='pages') }});
   }
   {% endfor %}
+  m1.stop_and_add_to_total();
 }
 

@@ -12,7 +12,7 @@ using namespace std;
 
 void run(struct params *input, int num_iter) {
   //cout << clinfo();
-  CLWrapper clw(/*platform=*/0,/*device=*/0,/*profiling=*/true);
+  CLWrapper clw(/*platform=*/0,/*device=*/0,/*profiling=*/false);
   NeighListLike *nl = new NeighListLike(input);
 
   one_time.push_back(SimpleTimer("initialization"));
@@ -44,9 +44,9 @@ void run(struct params *input, int num_iter) {
     nl->firsttouch);
   one_time.back().stop_and_add_to_total();
 
-  per_iter.push_back(SimpleTimer("run"));
+  //per_iter.push_back(SimpleTimer("run"));
   for (int run=0; run<num_iter; run++) {
-    per_iter[0].start();
+    //per_iter[0].start();
     hw->run(
       HertzWrapper::KERNEL,
       input->x,
@@ -54,12 +54,18 @@ void run(struct params *input, int num_iter) {
       input->omega,
       input->force,
       input->torque, NULL, NULL);
-    per_iter[0].stop_and_add_to_total();
+    //per_iter[0].stop_and_add_to_total();
 
     if (run == 0) {
       // check results
     }
   }
+  per_iter.push_back(SimpleTimer("memcpy_to_dev"));
+  per_iter.push_back(SimpleTimer("kernel"));
+  per_iter.push_back(SimpleTimer("memcpy_from_dev"));
+  per_iter[0].set_total_time(get_m0());
+  per_iter[1].set_total_time(get_k0());
+  per_iter[2].set_total_time(get_m1());
 
   one_time.push_back(SimpleTimer("cleanup"));
   one_time.back().start();

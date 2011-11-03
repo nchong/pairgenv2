@@ -20,6 +20,14 @@
 #include <sstream>
 #include <iostream>
 
+#include "posix_timer.h"
+static SimpleTimer m0;
+static SimpleTimer k0;
+static SimpleTimer m1;
+double get_cuda_m0() { return m0.total_time(); }
+double get_cuda_k0() { return k0.total_time(); }
+double get_cuda_m1() { return m1.total_time(); }
+
 using namespace std;
 
 {{ classname }}CudaWrapper::{{ classname }}CudaWrapper(
@@ -101,12 +109,14 @@ void {{ classname }}CudaWrapper::run(
     {%- endif %}
   {% endfor -%}
 ) {
+  m0.start();
   {% for p in params if p.is_type('P', '-') and p.reload -%}
     cudaMemcpy({{ memcpy_to_dev_args(p) }});
   {% endfor -%}
   {% for p in params if p.is_type('P', 'RW') or p.is_type('P', 'SUM') -%}
     cudaMemcpy({{ memcpy_to_dev_args(p) }});
   {% endfor %}
+  m0.stop_and_add_to_total();
 
   cudaThreadSynchronize();
   cudaError_t err = cudaGetLastError();
@@ -114,6 +124,7 @@ void {{ classname }}CudaWrapper::run(
     printf("Pre-compute-kernel error: %s.\n", cudaGetErrorString(err));
     exit(1);
   }
+  k0.start();
   if (kernel == TPA) {
     {{ name }}_tpa<<<tpa_grid_size, block_size>>>(
       N,
@@ -146,12 +157,14 @@ void {{ classname }}CudaWrapper::run(
     );
   }
   cudaThreadSynchronize();
+  k0.stop_and_add_to_total();
   err = cudaGetLastError();
   if (err != cudaSuccess) {
     printf("Post-compute-kernel error: %s.\n", cudaGetErrorString(err));
     exit(1);
   }
 
+  m1.start();
   {% for p in params if p.is_type('P', 'RW') or p.is_type('P', 'SUM') -%}
     cudaMemcpy({{ memcpy_from_dev_args(p) }});
   {% endfor %}
@@ -161,5 +174,6 @@ void {{ classname }}CudaWrapper::run(
     d_nl->unload_{{ p.name() }}({{ p.name(pre='h_',suf='pages') }});
   }
   {% endfor %}
+  m1.stop_and_add_to_total();
 }
 
