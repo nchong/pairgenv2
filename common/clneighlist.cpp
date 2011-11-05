@@ -5,7 +5,7 @@
 
 #include <cassert>
 
-#define PARANOID true
+#define PARANOID false
 
 CLNeighList::CLNeighList(CLWrapper &clw, size_t wx,
   int nparticles, int maxpage, int pgsize) :
@@ -101,7 +101,6 @@ void CLNeighList::reload(int *numneigh, int **firstneigh, int **pages, int reloa
     //   - if their list of neighbors is the first entry of a page (pagebreak)
     clw.memcpy_to_dev(d_firstneigh, d_firstneigh_size, firstneigh);
     clw.memcpy_to_dev(d_pages, d_pages_size, pages);
-    size_t wx = 128;
     // number of workgroups of size [wx] workitems
     int k = ((nparticles / wx)+1);
     size_t gx = (size_t) k * wx;

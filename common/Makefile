@@ -20,9 +20,12 @@ clneighlist.o: clneighlist.cpp decode.cl.h
 %.cl.h: %.cl
 	$(OPENCL2INCLUDE) $< $@
 
-test: test_clneighlist.cpp clneighlist.o
+cltest: test_clneighlist.cpp clneighlist.o
+	$(CXX) $(CXXFLAGS) $(INC) $(LIB) -o $@ $^
+
+cudatest: test_cudaneighlist.cpp cudaneighlist.o
 	$(CXX) $(CXXFLAGS) $(INC) $(LIB) -o $@ $^
 
 .PHONY: clean
 clean:
-	rm -f *.o test decode.cl.h $(OUT)
+	rm -f *.o decode.cl.h cltest cudatest $(OUT)
