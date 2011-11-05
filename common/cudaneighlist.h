@@ -62,7 +62,7 @@ class CudaNeighList {
     void resize(int new_maxpage);
 
   private:
-    void check_decode(int *numneigh, int **firstneigh, int **pages);
+    void check_decode(int *numneigh, int **firstneigh);
 
   public:
     CudaNeighList(int block_size,

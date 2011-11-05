@@ -37,7 +37,7 @@
  *  numneigh[i] 
  *  is the number of neighbors for particle i
  *
- *  neighidx[(pageidx[i] * pgsize) + offset[i] + jj]
+ *  neighidx[offset[i] + jj]
  *  is the index j of the jj-th neighbor to particle i
  *
  * We assign one block per particle i.
@@ -51,9 +51,7 @@ __kernel void {{name}}_bpa(
   __global {{ p.type }} {{ p.devname(pre='*') }},
   {% endfor -%}
   __global int *numneigh,
-  __global int *pageidx,
   __global int *offset,
-  int pgsize,
   __global int *neighidx
   {%- for p in params if not p.is_type('P', 'RO') -%}
   {{- ', ' if loop.first }}
@@ -80,9 +78,7 @@ __kernel void {{name}}_bpa(
   int idx = get_group_id(0);
   int block_size = get_local_size(0);
   int nneigh = numneigh[idx];
-  int mypage = pageidx[idx];
-  int myoffset = offset[idx];
-  int nidx_base = (mypage*pgsize) + myoffset;
+  int nidx_base = offset[idx];
 
   {% for p in params if p.is_type('P', 'SUM') %}
   {{- "// per-thread accumulators" if loop.first -}}

@@ -40,6 +40,7 @@ class CLNeighList {
   private:
     //kernels
     cl_kernel decode_neighlist_p1;
+    cl_kernel decode_neighlist_p2;
     //scans
     Scan *scan;
     SegmentedScan *segscan;
@@ -67,7 +68,7 @@ class CLNeighList {
     void resize(int new_maxpage);
 
   private:
-    void check_decode(int *numneigh, int **firstneigh, int **pages);
+    void check_decode(int *numneigh, int **firstneigh);
 
   public:
     CLNeighList(CLWrapper &clw, size_t wx, int nparticles, int maxpage, int pgsize);

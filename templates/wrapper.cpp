@@ -111,7 +111,7 @@ void {{ classname }}Wrapper::run(
       {% for p in params if p.is_type('P', 'RO') -%}
       {{ p.devname() }},
       {% endfor -%}
-      d_nl->d_numneigh, d_nl->d_pageidx, d_nl->d_offset, d_nl->pgsize, d_nl->d_neighidx,
+      d_nl->d_numneigh, d_nl->d_offset, d_nl->d_neighidx,
       {% for p in params if not p.is_type('P', 'RO') -%}
         {%- if p.is_type('N', '-') -%}
       d_nl->{{ p.devname() }}{{ ', ' if not loop.last }}
@@ -130,7 +130,7 @@ void {{ classname }}Wrapper::run(
       {% for p in params if p.is_type('P', 'RO') -%}
       {{ p.devname() }},
       {% endfor -%}
-      d_nl->d_numneigh, d_nl->d_pageidx, d_nl->d_offset, d_nl->pgsize, d_nl->d_neighidx,
+      d_nl->d_numneigh, d_nl->d_offset, d_nl->d_neighidx,
       {%- for p in params if not p.is_type('P', 'RO') %}
         {%- if p.is_type('N', '-') %}
       d_nl->{{ p.devname() }}{{ ', ' if not loop.last }}

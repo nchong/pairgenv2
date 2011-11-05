@@ -20,16 +20,16 @@ $(OUT): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INC) $(SHARED) -o $@ $^ $(LIB)
 
 cl_tpa: driver.cpp $(OUT)
-	$(CXX) -DBLOCK_SIZE=128 -DKERNEL=TPA -DPOSIX_TIMER $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
+	$(CXX) -DBLOCK_SIZE=32 -DKERNEL=TPA -DPOSIX_TIMER $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
 
 cl_bpa: driver.cpp $(OUT)
-	$(CXX) -DBLOCK_SIZE=8 -DKERNEL=BPA -DPOSIX_TIMER $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
+	$(CXX) -DBLOCK_SIZE=32 -DKERNEL=BPA -DPOSIX_TIMER $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
 
 cuda_tpa: cudadriver.cpp $(OUT)
-	$(CXX) -DBLOCK_SIZE=128 -DKERNEL=TPA -DPOSIX_TIMER $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
+	$(CXX) -DBLOCK_SIZE=32 -DKERNEL=TPA -DPOSIX_TIMER $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
 
 cuda_bpa: cudadriver.cpp $(OUT)
-	$(CXX) -DBLOCK_SIZE=8 -DKERNEL=BPA -DPOSIX_TIMER $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
+	$(CXX) -DBLOCK_SIZE=32 -DKERNEL=BPA -DPOSIX_TIMER $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
 
 hertz_kernel.h hertz_cudaneighlist.cu hertz_cudawrapper.cu hertz_clneighlist.cpp hertz_wrapper.cpp:
 	../../pairgen.py hertz.yml
