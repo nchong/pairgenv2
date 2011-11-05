@@ -25,4 +25,4 @@ test: test_clneighlist.cpp clneighlist.o
 
 .PHONY: clean
 clean:
-	rm -f *.o test $(OUT)
+	rm -f *.o test decode.cl.h $(OUT)

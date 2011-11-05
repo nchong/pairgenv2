@@ -42,7 +42,7 @@ __kernel void decode_neighlist_p2(
   //input
   int nparticles,
   __global int *pageidx,
-  __global int pgsize,
+  int pgsize,
   //inout
   __global int *offset
 ) {
