@@ -31,7 +31,7 @@
  *  numneigh[i] 
  *  is the number of neighbors for particle i
  *
- *  neighidx[(pageidx[i] * pgsize) + offset[i] + jj]
+ *  neighidx[offset[i] + jj]
  *  is the index j of the jj-th neighbor to particle i
  *
  * We assign one thread per particle i.
@@ -45,9 +45,7 @@ __global__ void {{name}}_tpa(
   {{ p.type }} {{ p.devname(pre='*') }},
   {% endfor -%}
   int *numneigh,
-  int *pageidx,
   int *offset,
-  int pgsize,
   int *neighidx
   {%- for p in params if not p.is_type('P', 'RO') -%}
   {{- ', ' if loop.first }}
@@ -92,11 +90,10 @@ __global__ void {{name}}_tpa(
     {%- endfor %}
 
     // iterate over each neighbor of particle i
+    int myoffset = offset[idx];
     for (int jj=0; jj<numneigh[idx]; jj++) {
       // load particle j data
-      int mypage = pageidx[idx];
-      int myoffset = offset[idx];
-      int nidx = (mypage*pgsize) + myoffset + jj;
+      int nidx = myoffset + jj;
       int j = neighidx[nidx];
       {%- for p in params if p.is_type('P', 'RO') %}
       {{- assign(p, 'j', 'j')|indent(2) -}}
