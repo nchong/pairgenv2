@@ -21,7 +21,7 @@ clneighlist.o: clneighlist.cpp decode.cl.h
 	$(OPENCL2INCLUDE) $< $@
 
 test: test_clneighlist.cpp clneighlist.o
-	$(CXX) $(CXXFLAGS) $(INC) $(LIB) $(SHARED) -o $@ $^
+	$(CXX) $(CXXFLAGS) $(INC) $(LIB) -o $@ $^
 
 .PHONY: clean
 clean:

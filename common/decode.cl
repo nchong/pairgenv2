@@ -40,7 +40,7 @@ __kernel void decode_neighlist_p1(
 
 __kernel void decode_neighlist_p2(
   //input
-  int nparticles
+  int nparticles,
   __global int *pageidx,
   __global int pgsize,
   //inout
@@ -48,7 +48,7 @@ __kernel void decode_neighlist_p2(
 ) {
   int tid = get_global_id(0);
   if (tid < nparticles) {
-    int mypage = pageidx[idx];
-    offset[idx] += (mypage*pgsize);
+    int mypage = pageidx[tid];
+    offset[tid] += (mypage*pgsize);
   }
 }
