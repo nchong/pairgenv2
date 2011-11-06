@@ -42,22 +42,28 @@ void run(struct params *input, int num_iter) {
     nl->firsttouch);
   one_time.back().stop_and_add_to_total();
 
-  //per_iter.push_back(SimpleTimer("run"));
+  //internal copies of outputs
+  double *force = new double[input->nnode*3];
+  double *torque = new double[input->nnode*3];
   for (int run=0; run<num_iter; run++) {
-    //per_iter[0].start();
+    //make copies
+    copy(input->force,  input->force  + input->nnode*3, force);
+    copy(input->torque, input->torque + input->nnode*3, torque);
+
     hw->run(
       HertzCudaWrapper::KERNEL,
       input->x,
       input->v,
       input->omega,
-      input->force,
-      input->torque, NULL, NULL);
-    //per_iter[0].stop_and_add_to_total();
+      force, torque, NULL, NULL);
 
     if (run == 0) {
       // check results
     }
   }
+  delete[] force;
+  delete[] torque;
+
   per_iter.push_back(SimpleTimer("memcpy_to_dev"));
   per_iter.push_back(SimpleTimer("kernel"));
   per_iter.push_back(SimpleTimer("memcpy_from_dev"));
