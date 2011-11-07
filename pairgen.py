@@ -58,8 +58,10 @@ if __name__ == '__main__':
     len([ c for c in consts if c.type == 'double' ]) > 0
 
   # process all templates in templates/ directory
+  # (ignoring temporary files and anything in the macros directory)
   env = Environment(loader=PackageLoader('pairgen', 'templates'))
-  for t in env.list_templates(filter_func=(lambda x: x[0] != '.')):
+  istemplate = lambda x: not x.startswith('.') and not x.startswith('macros')
+  for t in env.list_templates(filter_func=istemplate):
     output = name + '_' + t
     template = env.get_template(t)
     template.stream(
