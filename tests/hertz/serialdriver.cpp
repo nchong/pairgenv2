@@ -29,6 +29,13 @@ void run(struct params *input, int num_iter) {
     copy(input->torque, input->torque + input->nnode*3, torque);
     nl->copy_into(firstdouble, dpages, firsttouch, tpages);
 
+#ifdef TRACE
+    if (run == 0) {
+      printf("INIT %.16f\t%.16f\t%.16f\n",
+        force[TRACE*3], force[(TRACE*3)+1], force[(TRACE*3)+2]);
+    }
+#endif
+
     per_iter[0].start();
     for (int ii=0; ii<nl->inum; ii++) {
       int i = nl->ilist[ii];
@@ -38,6 +45,9 @@ void run(struct params *input, int num_iter) {
         int *touch = &(firsttouch[i][jj]);
       
         hertz_pair_kernel(
+#ifdef TRACE
+          i, j,
+#endif
           &input->x[(i*3)],     &input->x[(j*3)],
           &input->v[(i*3)],     &input->v[(j*3)],
           &input->omega[(i*3)], &input->omega[(j*3)],
@@ -52,9 +62,21 @@ void run(struct params *input, int num_iter) {
     }
     per_iter[0].stop_and_add_to_total();
 
+#ifdef TRACE
     if (run == 0) {
-      // check results
+      printf("DONE %.16f\t%.16f\t%.16f\n",
+        force[TRACE*3], force[(TRACE*3)+1], force[(TRACE*3)+2]);
+      printf("EXPT %.16f\t%.16f\t%.16f\n",
+        input->expected_force[TRACE*3], input->expected_force[(TRACE*3)+1], input->expected_force[(TRACE*3)+2]);
     }
+#endif
+
+#if CHECK
+    //only check results the first time around
+    if (run == 0) {
+      check_result(input, nl, force, torque, firstdouble, 0.0001, false, false);
+    }
+#endif
   }
 
   delete[] force;

@@ -2,8 +2,12 @@ include ../../Makefile.common
 TOP := $(dir $(lastword $(MAKEFILE_LIST)))
 
 # GLOBAL BUILD OPTIONS
-BLOCK_SIZE=32
+override CHECK ?= false
+override BLOCK_SIZE ?= 32
+
+# COMMON FLAGS
 override NVCCFLAGS += -DBLOCK_SIZE=$(BLOCK_SIZE)
+DRIVERFLAGS = -DCHECK=$(CHECK) -DBLOCK_SIZE=$(BLOCK_SIZE) -DPOSIX_TIMER
 
 # OUTPUTS
 OUT = libhertz.so
@@ -24,16 +28,16 @@ $(OUT): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INC) $(SHARED) -o $@ $^ $(LIB)
 
 cl_tpa: driver.cpp $(OUT)
-	$(CXX) -DBLOCK_SIZE=$(BLOCK_SIZE) -DKERNEL=TPA -DPOSIX_TIMER $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
+	$(CXX) -DKERNEL=TPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
 
 cl_bpa: driver.cpp $(OUT)
-	$(CXX) -DBLOCK_SIZE=$(BLOCK_SIZE) -DKERNEL=BPA -DPOSIX_TIMER $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
+	$(CXX) -DKERNEL=BPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
 
 cuda_tpa: cudadriver.cpp $(OUT)
-	$(CXX) -DBLOCK_SIZE=$(BLOCK_SIZE) -DKERNEL=TPA -DPOSIX_TIMER $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
+	$(CXX) -DKERNEL=TPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
 
 cuda_bpa: cudadriver.cpp $(OUT)
-	$(CXX) -DBLOCK_SIZE=$(BLOCK_SIZE) -DKERNEL=BPA -DPOSIX_TIMER $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
+	$(CXX) -DKERNEL=BPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
 
 hertz_kernel.h hertz_cudaneighlist.cu hertz_cudawrapper.cu hertz_clneighlist.cpp hertz_wrapper.cpp:
 	../../pairgen.py hertz.yml

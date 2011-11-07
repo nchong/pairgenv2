@@ -62,7 +62,7 @@ void run(struct params *input, int num_iter) {
       input->omega,
       force, torque, dpages, NULL);
 
-#if 1
+#if CHECK
     //only check results the first time around
     if (run == 0) {
       check_result(input, nl, force, torque, firstdouble, 0.0001, false, false);
