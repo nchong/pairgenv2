@@ -45,21 +45,29 @@ void run(struct params *input, int num_iter) {
   //internal copies of outputs
   double *force = new double[input->nnode*3];
   double *torque = new double[input->nnode*3];
+  double **firstdouble = NULL;
+  double **dpages = NULL;
+  int    **firsttouch = NULL;
+  int    **tpages = NULL;
   for (int run=0; run<num_iter; run++) {
     //make copies
     copy(input->force,  input->force  + input->nnode*3, force);
     copy(input->torque, input->torque + input->nnode*3, torque);
+    nl->copy_into(firstdouble, dpages, firsttouch, tpages);
 
     hw->run(
       HertzCudaWrapper::KERNEL,
       input->x,
       input->v,
       input->omega,
-      force, torque, NULL, NULL);
+      force, torque, dpages, NULL);
 
+#if 1
+    //only check results the first time around
     if (run == 0) {
-      // check results
+      check_result(input, nl, force, torque, firstdouble, 0.0001, false, false);
     }
+#endif
   }
   delete[] force;
   delete[] torque;
