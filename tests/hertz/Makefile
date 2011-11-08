@@ -21,11 +21,11 @@ LIB += -lgpunl
 OBJS = hertz_clneighlist.o hertz_wrapper.o
 OBJS += hertz_cudaneighlist.o hertz_cudawrapper.o
 
-$(SERIAL_OUT): serialdriver.cpp hertz_kernel.h
-	$(CXX) $(CXXFLAGS) -DPOSIX_TIMER $(INC) $(LIB) -o $@ $<
-
 $(OUT): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INC) $(SHARED) -o $@ $^ $(LIB)
+
+$(SERIAL_OUT): serialdriver.cpp hertz_kernel.h
+	$(CXX) $(CXXFLAGS) $(DRIVERFLAGS) $(INC) $(LIB) -o $@ $<
 
 cl_tpa: driver.cpp $(OUT)
 	$(CXX) -DKERNEL=TPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt

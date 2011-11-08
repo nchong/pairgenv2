@@ -60,12 +60,18 @@ void run(struct params *input, int num_iter) {
       input->x,
       input->v,
       input->omega,
-      force, torque, dpages, NULL);
+      force, torque,
+#if CHECK //then transfer back shearlist to check against
+      dpages,
+#else
+      NULL,
+#endif
+      NULL);
 
 #if CHECK
     //only check results the first time around
     if (run == 0) {
-      check_result(input, nl, force, torque, firstdouble, 0.0001, false, false);
+      check_result(input, nl, force, torque, firstdouble, 0.1, false, false);
     }
 #endif
   }
