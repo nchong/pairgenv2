@@ -1,0 +1,29 @@
+{# Macros for assigning to/from pairgen parameters #}
+
+{% macro template_assign(p,suf,from,idx) -%}
+  {% if p.dim > 1 -%}
+    {% for k in range(p.dim) %}
+    {{ p.name(suf=suf) }}[{{ k }}] = {{ from }}[({{ idx }}*{{ p.dim }})+{{k}}];
+    {%- endfor -%} 
+  {%- else %}
+    {{ p.name(suf=suf) }} = {{ from }}[{{ idx }}];
+  {%- endif -%}
+{% endmacro %}
+
+{% macro localassign(p,suf,idx) -%}
+  {{- template_assign(p,suf,p.name('local_'),idx) -}}
+{% endmacro %}
+
+{% macro assign(p,suf,idx) -%}
+  {{- template_assign(p,suf,p.devname(),idx) -}}
+{% endmacro %}
+
+{% macro assigninv(p,suf,idx,sum=false) -%}
+  {% if p.dim > 1 -%}
+    {% for k in range(p.dim) %}
+    {{ p.devname() }}[({{ idx }}*{{ p.dim }})+{{k}}] {{'+' if sum}}= {{ p.name(suf=suf) }}[{{ k }}];
+    {%- endfor -%} 
+  {%- else %}
+    {{ p.devname() }}[{{ idx }}] {{'+' if sum}}= {{ p.name(suf=suf) }};
+  {%- endif -%}
+{% endmacro %}

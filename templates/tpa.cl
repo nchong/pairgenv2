@@ -1,22 +1,4 @@
-{% macro assign(p,suf,idx) -%}
-  {% if p.dim > 1 -%}
-    {% for k in range(p.dim) %}
-    {{ p.name(suf=suf) }}[{{ k }}] = {{ p.devname() }}[({{ idx }}*{{ p.dim }})+{{k}}];
-    {%- endfor -%} 
-  {%- else %}
-    {{ p.name(suf=suf) }} = {{ p.devname() }}[{{ idx }}];
-  {%- endif -%}
-{% endmacro %}
-{% macro assigninv(p,suf,idx,sum=false) -%}
-  {% if p.dim > 1 -%}
-    {% for k in range(p.dim) %}
-    {{ p.devname() }}[({{ idx }}*{{ p.dim }})+{{k}}] {{'+' if sum}}= {{ p.name(suf=suf) }}[{{ k }}];
-    {%- endfor -%} 
-  {%- else %}
-    {{ p.devname() }}[{{ idx }}] {{'+' if sum}}= {{ p.name(suf=suf) }};
-  {%- endif -%}
-{% endmacro %}
-
+{% from 'macros/parameter.jinja' import localassign, assign, assigninv %}
 #ifndef {{ headername }}_TPA_H
 #define {{ headername }}_TPA_H
 {% if cl_khr_fp64 %}
@@ -26,6 +8,10 @@
 #pragma OPENCL EXTENSION cl_khr_fp64: enable
 {% endif %}
 #include "{{name}}_pair_kernel.cl"
+
+#ifndef BLOCK_SIZE
+#error You need to #define BLOCK_SIZE
+#endif
 
 /*
  * OpenCL thread-per-particle decomposition.
@@ -64,18 +50,51 @@ __kernel void {{name}}_tpa(
   {%- endif %}
   {%- endfor -%}
   ) {
+  // local, block and global identifiers
+  int lid = get_local_id(0);
+  int bid = get_group_id(0);
+  int idx = get_global_id(0);
+
+  // load particle(i) data into shared memory
+  {%- for p in params if p.is_type('P', 'RO') %}
+  __local {{ p.type }} {{ p.name(pre='local_') }}[BLOCK_SIZE*{{ p.dim }}];
+  {%- endfor %}
+#ifdef RANGECHECK
+  {%- for p in params if p.is_type('P', 'RO') %}
+  {%- if p.dim > 1 %}
+    {% for k in range(p.dim) %}
+  {{ p.name(pre='local_') }}[(BLOCK_SIZE*{{ k }})+lid] = {{ p.devname() }}[(bid*{{ p.dim }})+(BLOCK_SIZE*{{ k }})+lid];
+    {%- endfor -%}
+  {%- else %}
+  {{ p.name(pre='local_') }}[lid] = {{ p.devname() }}[idx];
+  {%- endif %}
+  {%- endfor %}
+#else //use modulo wrapping
+  {%- for p in params if p.is_type('P', 'RO') %}
+  {%- if p.dim > 1 %}
+    {%- for k in range(p.dim) %}
+  {{ p.name(pre='local_') }}[(BLOCK_SIZE*{{ k }})+lid] = {{ p.devname() }}[((bid*{{ p.dim }})+(BLOCK_SIZE*{{ k }})+lid)%N];
+    {%- endfor -%}
+  {%- else %}
+  {{ p.name(pre='local_') }}[lid] = {{ p.devname() }}[idx%N];
+  {%- endif %}
+  {%- endfor %}
+#endif
+  // required because we stride across per-particle data of dim>1 in block steps to ensure coalescing
+  // ie, this thread does not consume what it loads (except for the first load)
+  mem_fence(CLK_LOCAL_MEM_FENCE);
+
   // register copies of particle and neighbor data
   {%- for p in params if not p.is_type('P', 'SUM') -%}
     {%- for n in p.tagged_name() %}
   {{ p.type }} {{ n }}{{ "[%d]" % p.dim if p.dim == 3 }};
     {%- endfor -%}
   {% endfor %}
-  int idx = get_global_id(0);
   if (idx < N && numneigh[idx] > 0) {
     // load particle i data
     {% for p in params if p.is_type('P', 'RO') %}
     {{- "// per-particle RO data" if loop.first -}}
-      {{- assign(p, 'i', 'idx') -}}
+      {{- localassign(p, 'i', 'lid') -}}
     {%- else -%}
     {%- endfor %}
 {#- TODO: DEAL WITH P,RW DATA -#}

@@ -42,6 +42,7 @@ using namespace std;
     {% endfor %}
     stringstream extra_flags;
     extra_flags << " -I {{ cwd }}";
+    extra_flags << " -DBLOCK_SIZE=" << wx;
     {% for c in consts -%}
     extra_flags << " -D {{ c.hashdefine() }}=" << {{ c.name(pre='h_')}};
     {% endfor %}
