@@ -1,22 +1,4 @@
-{% macro assign(p,suf,idx) -%}
-  {% if p.dim > 1 -%}
-    {% for k in range(p.dim) %}
-    {{ p.name(suf=suf) }}[{{ k }}] = {{ p.devname() }}[({{ idx }}*{{ p.dim }})+{{k}}];
-    {%- endfor -%} 
-  {%- else %}
-    {{ p.name(suf=suf) }} = {{ p.devname() }}[{{ idx }}];
-  {%- endif -%}
-{% endmacro %}
-{% macro assigninv(p,suf,idx,sum=false) -%}
-  {% if p.dim > 1 -%}
-    {% for k in range(p.dim) %}
-    {{ p.devname() }}[({{ idx }}*{{ p.dim }})+{{k}}] {{'+' if sum}}= {{ p.name(suf=suf) }}[{{ k }}];
-    {%- endfor -%} 
-  {%- else %}
-    {{ p.devname() }}[{{ idx }}] {{'+' if sum}}= {{ p.name(suf=suf) }};
-  {%- endif -%}
-{% endmacro %}
-
+{% from 'macros/parameter.jinja' import localassign, assign, assigninv %}
 #ifndef {{ headername }}_BPA_H
 #define {{ headername }}_BPA_H
 {% if cl_khr_fp64 %}
