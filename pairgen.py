@@ -67,6 +67,7 @@ if __name__ == '__main__':
     template.stream(
       cwd=os.getcwd(),
       cl_khr_fp64=cl_khr_fp64,
+      maxdim=max([p.dim for p in params]),
       name=name,
       headername=name.upper(),
       classname=name.capitalize(),

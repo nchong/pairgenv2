@@ -62,6 +62,19 @@ __kernel void {{name}}_bpa(
   int nneigh = numneigh[idx];
   int nidx_base = offset[idx];
 
+  // load particle(i) data into shared memory
+  {%- for p in params if p.is_type('P', 'RO') %}
+  __local {{ p.type }} {{ p.name(pre='local_') }}[{{ p.dim }}];
+  {%- endfor %}
+  {%- for k in range(maxdim) %}
+  if (lid == {{ k }}) {
+    {%- for p in params if p.is_type('P', 'RO') and p.dim > k %}
+    {{ p.name(pre='local_') }}[{{ k }}] = {{ p.devname() }}[(idx*{{ p.dim }})+{{ k }}];
+    {%- endfor %}
+  }
+  {%- endfor %}
+  mem_fence(CLK_LOCAL_MEM_FENCE);
+
   {% for p in params if p.is_type('P', 'SUM') %}
   {{- "// per-thread accumulators" if loop.first -}}
     {%- if p.dim > 1 %}
@@ -75,7 +88,7 @@ __kernel void {{name}}_bpa(
   // load particle i data
   {% for p in params if p.is_type('P', 'RO') %}
   {{- "// per-particle RO data" if loop.first -}}
-  {{- assign(p, 'i', 'idx') -}}
+  {{- localassign(p, 'i', idx=None) -}}
   {%- else -%}
   {%- endfor %}
   {#- TODO: DEAL WITH P,RW DATA #}

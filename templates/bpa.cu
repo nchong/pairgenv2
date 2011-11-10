@@ -60,11 +60,24 @@ __global__ void {{name}}_bpa(
     {%- endfor -%}
   {% endfor %}
 
-  int tid = threadIdx.x;
+  int lid = threadIdx.x;
   int idx = blockIdx.x;
   int block_size = blockDim.x;
   int nneigh = numneigh[idx];
   int nidx_base = offset[idx];
+
+  // load particle(i) data into shared memory
+  {%- for p in params if p.is_type('P', 'RO') %}
+  __shared__ {{ p.type }} {{ p.name(pre='local_') }}[{{ p.dim }}];
+  {%- endfor %}
+  {%- for k in range(maxdim) %}
+  if (lid == {{ k }}) {
+    {%- for p in params if p.is_type('P', 'RO') and p.dim > k %}
+    {{ p.name(pre='local_') }}[{{ k }}] = {{ p.devname() }}[(idx*{{ p.dim }})+{{ k }}];
+    {%- endfor %}
+  }
+  {%- endfor %}
+  __threadfence_block();
 
   {% for p in params if p.is_type('P', 'SUM') %}
   {{- "// per-thread accumulators" if loop.first -}}
@@ -76,16 +89,19 @@ __global__ void {{name}}_bpa(
   {%- else -%}
   {%- endfor %}
 
+  {# The following is not necessary: we could just use the shared memory values.
+   # But we don't seem to suffer a performance hit and this is easier to generate.
+   #}
   // load particle i data
   {% for p in params if p.is_type('P', 'RO') %}
   {{- "// per-particle RO data" if loop.first -}}
-  {{- assign(p, 'i', 'idx') -}}
+  {{- localassign(p, 'i', idx=None) -}}
   {%- else -%}
   {%- endfor %}
   {#- TODO: DEAL WITH P,RW DATA #}
 
   if (idx < N && nneigh > 0) {
-    for (int jj=tid; jj<nneigh; jj+=block_size) {
+    for (int jj=lid; jj<nneigh; jj+=block_size) {
       // load particle j data
       int nidx = nidx_base + jj;
       int j = neighidx[nidx];
@@ -124,18 +140,18 @@ __global__ void {{name}}_bpa(
   {{- "// write per-thread accumulators into block-local arrays" if loop.first -}}
     {%- if p.dim > 1 %}
       {%- for k in range(p.dim) %}
-  {{ p.name(pre='l_', suf='_block') }}[(tid*{{ p.dim }})+{{ k }}] = {{ p.name(suf='i_delta') }}[{{ k }}];
+  {{ p.name(pre='l_', suf='_block') }}[(lid*{{ p.dim }})+{{ k }}] = {{ p.name(suf='i_delta') }}[{{ k }}];
       {%- endfor %}
     {%- else %}
-  {{ p.name(pre='l_', suf='_block') }}[tid] = {{ p.name(suf='i_delta') }};
+  {{ p.name(pre='l_', suf='_block') }}[lid] = {{ p.name(suf='i_delta') }};
     {%- endif %}
   {%- else -%}
   {%- endfor %}
 
-  __syncthreads();
+  __syncthreads(); {# TODO: replace with lighter-weight fence? #}
 
   // local reduction and writeback of per-particle data
-  if (idx < N && nneigh > 1 && tid == 0) {
+  if (idx < N && nneigh > 1 && lid == 0) {
     for (int i=1; i<block_size; i++) {
       {%- for p in params if p.is_type('P', 'SUM') %}
         {%- if p.dim > 1 %}

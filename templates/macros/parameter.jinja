@@ -3,10 +3,18 @@
 {% macro template_assign(p,suf,from,idx) -%}
   {% if p.dim > 1 -%}
     {% for k in range(p.dim) %}
+    {%- if idx == None %}
+    {{ p.name(suf=suf) }}[{{ k }}] = {{ from }}[{{k}}];
+    {%- else %}
     {{ p.name(suf=suf) }}[{{ k }}] = {{ from }}[({{ idx }}*{{ p.dim }})+{{k}}];
+    {%- endif -%}
     {%- endfor -%} 
   {%- else %}
+    {%- if idx == None %}
+    {{ p.name(suf=suf) }} = {{ from }}[0];
+    {%- else %}
     {{ p.name(suf=suf) }} = {{ from }}[{{ idx }}];
+    {%- endif -%}
   {%- endif -%}
 {% endmacro %}
 
