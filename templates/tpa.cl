@@ -52,7 +52,7 @@ __kernel void {{name}}_tpa(
   ) {
   // local, block and global identifiers
   int lid = get_local_id(0);
-  int bid = get_group_id(0);
+  int bid = get_group_id(0) * get_local_size(0);
   int idx = get_global_id(0);
 
   // load particle(i) data into shared memory
@@ -60,15 +60,17 @@ __kernel void {{name}}_tpa(
   __local {{ p.type }} {{ p.name(pre='local_') }}[BLOCK_SIZE*{{ p.dim }}];
   {%- endfor %}
 #ifdef RANGECHECK
-  {%- for p in params if p.is_type('P', 'RO') %}
-  {%- if p.dim > 1 %}
-    {% for k in range(p.dim) %}
-  {{ p.name(pre='local_') }}[(BLOCK_SIZE*{{ k }})+lid] = {{ p.devname() }}[(bid*{{ p.dim }})+(BLOCK_SIZE*{{ k }})+lid];
-    {%- endfor -%}
-  {%- else %}
-  {{ p.name(pre='local_') }}[lid] = {{ p.devname() }}[idx];
-  {%- endif %}
-  {%- endfor %}
+  if (idx < N) {
+    {%- for p in params if p.is_type('P', 'RO') %}
+    {%- if p.dim > 1 %}
+      {% for k in range(p.dim) %}
+    {{ p.name(pre='local_') }}[(BLOCK_SIZE*{{ k }})+lid] = {{ p.devname() }}[(bid*{{ p.dim }})+(BLOCK_SIZE*{{ k }})+lid];
+      {%- endfor -%}
+    {%- else %}
+    {{ p.name(pre='local_') }}[lid] = {{ p.devname() }}[idx];
+    {%- endif %}
+    {%- endfor %}
+  }
 #else //use modulo wrapping
   {%- for p in params if p.is_type('P', 'RO') %}
   {%- if p.dim > 1 %}
