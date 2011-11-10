@@ -4,6 +4,7 @@ TOP := $(dir $(lastword $(MAKEFILE_LIST)))
 # GLOBAL BUILD OPTIONS
 override CHECK ?= false
 override BLOCK_SIZE ?= 32
+override BUILD_DIR ?= .
 
 # COMMON FLAGS
 override NVCCFLAGS += -DBLOCK_SIZE=$(BLOCK_SIZE)
@@ -22,22 +23,22 @@ OBJS = hertz_clneighlist.o hertz_wrapper.o
 OBJS += hertz_cudaneighlist.o hertz_cudawrapper.o
 
 $(OUT): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(INC) $(SHARED) -o $@ $^ $(LIB)
+	$(CXX) $(CXXFLAGS) $(INC) $(SHARED) -o $(BUILD_DIR)/$@ $^ $(LIB)
 
 $(SERIAL_OUT): serialdriver.cpp hertz_kernel.h
-	$(CXX) $(CXXFLAGS) $(DRIVERFLAGS) $(INC) $(LIB) -o $@ $<
+	$(CXX) $(CXXFLAGS) $(DRIVERFLAGS) $(INC) $(LIB) -o $(BUILD_DIR)/$@ $<
 
 cl_tpa: driver.cpp $(OUT)
-	$(CXX) -DKERNEL=TPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
+	$(CXX) -DKERNEL=TPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
 
 cl_bpa: driver.cpp $(OUT)
-	$(CXX) -DKERNEL=BPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
+	$(CXX) -DKERNEL=BPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
 
 cuda_tpa: cudadriver.cpp $(OUT)
-	$(CXX) -DKERNEL=TPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
+	$(CXX) -DKERNEL=TPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
 
 cuda_bpa: cudadriver.cpp $(OUT)
-	$(CXX) -DKERNEL=BPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $@ $< $(LIB) -L. -lhertz -lrt
+	$(CXX) -DKERNEL=BPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
 
 hertz_kernel.h hertz_cudaneighlist.cu hertz_cudawrapper.cu hertz_clneighlist.cpp hertz_wrapper.cpp:
 	../../pairgen.py hertz.yml
