@@ -61,19 +61,13 @@ void run(struct params *input, int num_iter) {
       input->v,
       input->omega,
       force, torque,
-#if CHECK //then transfer back shearlist to check against
-      dpages,
-#else
-      NULL,
-#endif
-      NULL);
+      NULL, NULL);
 
-#if CHECK
     //only check results the first time around
     if (run == 0) {
-      check_result(input, nl, force, torque, firstdouble, 0.1, false, false);
+      hw->d_nl->unload_shear(dpages);
+      check_result(input, nl, force, torque, firstdouble, 0.5, false, false);
     }
-#endif
   }
   delete[] force;
   delete[] torque;
