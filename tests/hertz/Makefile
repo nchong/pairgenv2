@@ -2,13 +2,12 @@ include ../../Makefile.common
 TOP := $(dir $(lastword $(MAKEFILE_LIST)))
 
 # GLOBAL BUILD OPTIONS
-override CHECK ?= false
 override BLOCK_SIZE ?= 32
 override BUILD_DIR ?= .
 
 # COMMON FLAGS
 override NVCCFLAGS += -DBLOCK_SIZE=$(BLOCK_SIZE)
-DRIVERFLAGS = -DCHECK=$(CHECK) -DBLOCK_SIZE=$(BLOCK_SIZE) -DPOSIX_TIMER
+DRIVERFLAGS = -DBLOCK_SIZE=$(BLOCK_SIZE) -DPOSIX_TIMER
 
 # OUTPUTS
 OUT = libhertz.so

@@ -12,7 +12,7 @@ using namespace std;
 
 void run(struct params *input, int num_iter) {
   //cout << clinfo();
-  CLWrapper clw(/*platform=*/0,/*device=*/0,/*profiling=*/true);
+  CLWrapper clw(/*platform=*/0,/*device=*/0,/*profiling=*/false);
   NeighListLike *nl = new NeighListLike(input);
 
   one_time.push_back(SimpleTimer("initialization"));
@@ -44,22 +44,35 @@ void run(struct params *input, int num_iter) {
     nl->firsttouch);
   one_time.back().stop_and_add_to_total();
 
-  per_iter.push_back(SimpleTimer("run"));
+  //internal copies of outputs
+  double *force = new double[input->nnode*3];
+  double *torque = new double[input->nnode*3];
+  double **firstdouble = NULL;
+  double **dpages = NULL;
+  int    **firsttouch = NULL;
+  int    **tpages = NULL;
   for (int run=0; run<num_iter; run++) {
-    per_iter[0].start();
+    //make copies
+    copy(input->force,  input->force  + input->nnode*3, force);
+    copy(input->torque, input->torque + input->nnode*3, torque);
+    nl->copy_into(firstdouble, dpages, firsttouch, tpages);
+
     hw->run(
       HertzWrapper::KERNEL,
       input->x,
       input->v,
       input->omega,
-      input->force,
-      input->torque, NULL, NULL);
-    per_iter[0].stop_and_add_to_total();
+      force, torque,
+      NULL, NULL);
 
+    //only check results the first time around
     if (run == 0) {
-      // check results
+      hw->d_nl->unload_shear(dpages);
+      check_result(input, nl, force, torque, firstdouble, 0.5, false, false);
     }
   }
+  delete[] force;
+  delete[] torque;
 
   one_time.push_back(SimpleTimer("cleanup"));
   one_time.back().start();
