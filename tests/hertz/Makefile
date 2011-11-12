@@ -9,8 +9,8 @@ override BUILD_DIR ?= .
 override NVCCFLAGS += -DBLOCK_SIZE=$(BLOCK_SIZE)
 DRIVERFLAGS = -DBLOCK_SIZE=$(BLOCK_SIZE) -DPOSIX_TIMER
 ifneq ($(strip $(TRACE)),)
-  override CXXFLAGS  += '-DTRACE=$(TRACE)'
-  override NVCCFLAGS += '-DTRACE=$(TRACE)'
+  override CXXFLAGS  += -DTRACE=$(TRACE)
+  override NVCCFLAGS += -DTRACE=$(TRACE)
 endif
 
 # OUTPUTS
