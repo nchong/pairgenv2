@@ -31,6 +31,20 @@
 
 #define sqrtFiveOverSix 0.91287092917527685576161630466800355658790782499663875
 
+#ifdef TRACE
+#if defined(__CUDACC__)
+  #include "cuPrintf.cu"
+  #define PRINT cuPrintf
+#else
+  #include <cstdio>
+  #define PRINT printf
+#endif
+
+#define QUOTE(str) #str
+#define ITRACE(x) PRINT("%s\t%d\n", QUOTE(x), x)
+#define DTRACE(x) PRINT("%s\t%.16f\n", QUOTE(x), x)
+#endif
+
 #if defined(__CUDACC__)
   __device__
 #else
@@ -198,9 +212,8 @@ void hertz_pair_kernel(
 
 #ifdef TRACE
     if (i == TRACE) {
-      printf("hit %.16f\t%.16f\t%.16f\n", fx, fy, fz);
-    } else if (j == TRACE) {
-      printf("hit %.16f\t%.16f\t%.16f\n", -fx, -fy, -fz);
+      ITRACE(i); ITRACE(j);
+      DTRACE(fx); DTRACE(fy); DTRACE(fz);
     }
 #endif
   }
