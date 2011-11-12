@@ -38,8 +38,8 @@ void run(struct params *input, int num_iter) {
     nl->firstneigh,
     nl->pages,
     nl->maxpage,
-    nl->firstdouble,
-    nl->firsttouch);
+    nl->dpages,
+    nl->tpages);
   one_time.back().stop_and_add_to_total();
 
   //internal copies of outputs
