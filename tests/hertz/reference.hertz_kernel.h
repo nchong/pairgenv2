@@ -31,12 +31,29 @@
 
 #define sqrtFiveOverSix 0.91287092917527685576161630466800355658790782499663875
 
+#ifdef TRACE
+#if defined(__CUDACC__)
+  #include "cuPrintf.cu"
+  #define PRINT cuPrintf
+#else
+  #include <cstdio>
+  #define PRINT printf
+#endif
+
+#define QUOTE(str) #str
+#define ITRACE(x) PRINT("%s\t%d\n", QUOTE(x), x)
+#define DTRACE(x) PRINT("%s\t%.16f\n", QUOTE(x), x)
+#endif
+
 #if defined(__CUDACC__)
   __device__
 #else
   inline
 #endif
 void hertz_pair_kernel(
+#ifdef TRACE
+    int i, int j,
+#endif
     double xi[3], double xj[3], 
     double vi[3], double vj[3], 
     double omegai[3], double omegaj[3], 
@@ -179,5 +196,12 @@ void hertz_pair_kernel(
     torquei_delta[0] -= cri*tor1;
     torquei_delta[1] -= cri*tor2;
     torquei_delta[2] -= cri*tor3;
+
+#ifdef TRACE
+    if (i == TRACE) {
+      ITRACE(i); ITRACE(j);
+      DTRACE(fx); DTRACE(fy); DTRACE(fz);
+    }
+#endif
   }
 }

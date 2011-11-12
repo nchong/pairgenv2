@@ -20,6 +20,11 @@
 #include <sstream>
 #include <iostream>
 
+#ifdef TRACE
+#warning Turning TRACE on will affect timing results!
+#include "cuPrintf.cu"
+#endif
+
 using namespace std;
 
 {{ classname }}CudaWrapper::{{ classname }}CudaWrapper(
@@ -114,6 +119,9 @@ void {{ classname }}CudaWrapper::run(
     printf("Pre-compute-kernel error: %s.\n", cudaGetErrorString(err));
     exit(1);
   }
+#ifdef TRACE
+  cudaPrintfInit();
+#endif
   if (kernel == TPA) {
     {{ name }}_tpa<<<tpa_grid_size, block_size>>>(
       N,
@@ -146,6 +154,10 @@ void {{ classname }}CudaWrapper::run(
     );
   }
   cudaThreadSynchronize();
+#ifdef TRACE
+  cudaPrintfDisplay(stdout, true);
+  cudaPrintfEnd();
+#endif
   err = cudaGetLastError();
   if (err != cudaSuccess) {
     printf("Post-compute-kernel error: %s.\n", cudaGetErrorString(err));
