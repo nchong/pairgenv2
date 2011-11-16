@@ -75,7 +75,7 @@ __kernel void {{name}}_tpa(
   {%- for p in params if p.is_type('P', 'RO') %}
   {%- if p.dim > 1 %}
     {%- for k in range(p.dim) %}
-  {{ p.name(pre='local_') }}[(BLOCK_SIZE*{{ k }})+lid] = {{ p.devname() }}[((bid*{{ p.dim }})+(BLOCK_SIZE*{{ k }})+lid)%N];
+  {{ p.name(pre='local_') }}[(BLOCK_SIZE*{{ k }})+lid] = {{ p.devname() }}[((bid*{{ p.dim }})+(BLOCK_SIZE*{{ k }})+lid)%(N*{{ p.dim }})];
     {%- endfor -%}
   {%- else %}
   {{ p.name(pre='local_') }}[lid] = {{ p.devname() }}[idx%N];
