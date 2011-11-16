@@ -1,32 +1,15 @@
-{% from 'macros/parameter.jinja' import localassign, assign, assigninv %}
-#ifndef {{ headername }}_BPA_H
-#define {{ headername }}_BPA_H
+{% extends 'bases/bpa.template' %}
+{% block extraheaders %}
 #include "{{name}}_pair_kernel.cu"
-
-/*
- * CUDA block-per-particle decomposition.
- *
- * Given N particles,
- *  d_<var>[i]
- *  is the particle data for particle i
- *
- *  numneigh[i] 
- *  is the number of neighbors for particle i
- *
- *  neighidx[offset[i] + jj]
- *  is the index j of the jj-th neighbor to particle i
- *
- * We assign one block per particle i.
- * Each thread within a block is assigned one of the numneigh[i] neighbors of i.
- * NB: This kernel does not update any neighbor particles.
- *     Therefore the neighbor list must contain symmetric duplicates.
- */
 
 // dynamically allocated at launch time
 // see Section 4.2.2.3 in NVIDIA CUDA Programming Guide (v2.0)
 extern __shared__ char array[];
+{% endblock %}
 
-__global__ void {{name}}_bpa(
+{% block kqualifier %} __global__ {% endblock %}
+
+{% block kparameters %}
   int N, // number of particles
   {% for p in params if p.is_type('P', 'RO') -%}
   {{ p.type }} {{ p.devname(pre='*') }},
@@ -44,140 +27,26 @@ __global__ void {{name}}_bpa(
     #error pairgen generation problem (this should be unreachable!)
   {%- endif %}
   {%- endfor -%}
-  ) {
+{% endblock %}
+
+{% block sharedmem %}
   {% set offset = "0" %}
   {% for p in params if p.is_type('P', 'SUM') %}
-  {{- "// block-level array for per-particle SUM data" if loop.first }}
+  {{- "// per-particle SUM data" if loop.first }}
   {{ p.type }} {{ p.name(pre='*l_', suf='_block') }} = ({{ p.type }} *)&array[{{ offset }}];
   {%- set offset = offset + " + (blockDim.x*%d*sizeof(%s))" % (p.dim, p.type) %}
   {%- else -%}
   {% endfor %}
 
-  // register copies of particle and neighbor data
-  {%- for p in params if not p.is_type('P', 'SUM') -%}
-    {%- for n in p.tagged_name() %}
-  {{ p.type }} {{ n }}{{ "[%d]" % p.dim if p.dim == 3 }};
-    {%- endfor -%}
-  {% endfor %}
-
-  int lid = threadIdx.x;
-  int idx = blockIdx.x;
-  int block_size = blockDim.x;
-  int nneigh = numneigh[idx];
-  int nidx_base = offset[idx];
-
-  // load particle(i) data into shared memory
   {%- for p in params if p.is_type('P', 'RO') %}
   __shared__ {{ p.type }} {{ p.name(pre='local_') }}[{{ p.dim }}];
   {%- endfor %}
-  {%- for k in range(maxdim) %}
-  if (lid == {{ k }}) {
-    {%- for p in params if p.is_type('P', 'RO') and p.dim > k %}
-    {{ p.name(pre='local_') }}[{{ k }}] = {{ p.devname() }}[(idx*{{ p.dim }})+{{ k }}];
-    {%- endfor %}
-  }
-  {%- endfor %}
-  __threadfence_block();
+{% endblock %}
 
-  {% for p in params if p.is_type('P', 'SUM') %}
-  {{- "// per-thread accumulators" if loop.first -}}
-    {%- if p.dim > 1 %}
-  {{ p.type }} {{ p.name(suf='i_delta') }}[{{ p.dim }}] = {{ p.additive_id() }};
-    {%- else %}
-  {{ p.type }} {{ p.name(suf='i_delta') }} = {{ p.additive_id() }};
-    {%- endif %}
-  {%- else -%}
-  {%- endfor %}
+{% block kidx %}
+  int lid = threadIdx.x;
+  int idx = blockIdx.x;
+  int block_size = blockDim.x;
+{% endblock %}
 
-  {# The following is not necessary: we could just use the shared memory values.
-   # But we don't seem to suffer a performance hit and this is easier to generate.
-   #}
-  // load particle i data
-  {% for p in params if p.is_type('P', 'RO') %}
-  {{- "// per-particle RO data" if loop.first -}}
-  {{- localassign(p, 'i', idx=None) -}}
-  {%- else -%}
-  {%- endfor %}
-  {#- TODO: DEAL WITH P,RW DATA #}
-
-  if (idx < N && nneigh > 0) {
-    for (int jj=lid; jj<nneigh; jj+=block_size) {
-      // load particle j data
-      int nidx = nidx_base + jj;
-      int j = neighidx[nidx];
-      {%- for p in params if p.is_type('P', 'RO') %}
-      {{- assign(p, 'j', 'j')|indent(2) -}}
-      {%- endfor %}
-      {# not possible to load per-particle j data #}
-      {%- for p in params if p.is_type('N', '-') %}
-      {{- "// load per-neighbor data" if loop.first -}}
-      {{- assign(p, '', 'nidx')|indent(2) -}}
-      {%- endfor %}
-
-      // do pairwise calculation
-      {{ name }}_pair_kernel(
-        {%- for p in params -%}
-          {% set outer_loop = loop %}
-          {% for n in p.tagged_name() -%}
-            {% set comma = not (outer_loop.last and loop.last) %}
-            {%- if p.dim == 1 -%}
-      {{ '&' if p.is_type('-', 'RW') or p.is_type('-','SUM') }}{{ n }}{{ ', ' if comma }}
-            {%- else -%}
-      {{ n }}{{ ', ' if comma }}
-            {%- endif -%}
-          {%- endfor -%}
-        {%- endfor -%}
-      );
-
-      // writeback per-neighbor RW data
-      {%- for p in params if p.is_type('N', 'RW') -%}
-        {{- assigninv(p,'','nidx')|indent(2) -}}
-      {%- endfor %}
-    }
-  }
-
-  {% for p in params if p.is_type('P', 'SUM') %}
-  {{- "// write per-thread accumulators into block-local arrays" if loop.first -}}
-    {%- if p.dim > 1 %}
-      {%- for k in range(p.dim) %}
-  {{ p.name(pre='l_', suf='_block') }}[(lid*{{ p.dim }})+{{ k }}] = {{ p.name(suf='i_delta') }}[{{ k }}];
-      {%- endfor %}
-    {%- else %}
-  {{ p.name(pre='l_', suf='_block') }}[lid] = {{ p.name(suf='i_delta') }};
-    {%- endif %}
-  {%- else -%}
-  {%- endfor %}
-
-  __syncthreads(); {# TODO: replace with lighter-weight fence? #}
-
-  // local reduction and writeback of per-particle data
-  if (idx < N && nneigh > 1 && lid == 0) {
-    for (int i=1; i<block_size; i++) {
-      {%- for p in params if p.is_type('P', 'SUM') %}
-        {%- if p.dim > 1 %}
-          {%- for k in range(p.dim) %}
-      {{ p.name(suf='i_delta') }}[{{ k }}] += {{ p.name(pre='l_', suf='_block') }}[(i*{{ p.dim }})+{{ k }}];
-          {%- endfor %}
-        {%- else %}
-      {{ p.name(suf='i_delta') }} += {{ p.name(pre='l_', suf='_block') }}[i];
-        {%- endif %}
-      {%- else -%}
-      {%- endfor %}
-    }
-
-    {%- for p in params if p.is_type('P', 'SUM') %}
-      {%- if p.dim > 1 %}
-        {%- for k in range(p.dim) %}
-    {{ p.name(pre='d_') }}[(idx*{{ p.dim }})+{{ k }}] += {{ p.name(suf='i_delta') }}[{{ k }}];
-        {%- endfor %}
-      {%- else %}
-    {{ p.name(pre='d_') }}[idx] += {{ p.name(suf='i_delta') }};
-      {%- endif %}
-    {%- else -%}
-    {%- endfor %}
-  }
-
-}
-
-#endif
-
+{% block memfence %} __threadfence_block(); {% endblock %}
