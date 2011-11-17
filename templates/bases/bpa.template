@@ -69,14 +69,13 @@
 
   if (idx < N && nneigh > 0) {
     for (int jjbase=0; jjbase<nneigh; jjbase+=block_size) {
-      int gidx_base = nidx_base + jjbase;
+      int gidx_base = nidx_base + jjbase; {# THE FOLLOWING IS DANGEROUS AND MAY SEGFAULT #}
       {%- for k in range(maxdim) %}
-      if (jjbase + lid < nneigh) {
         {%- for p in params if p.is_type('N', '-') and k < p.dim %}
-        {{ p.name(pre='local_') }}[(BLOCK_SIZE*{{ k }})+lid] = {{ p.devname() }}[(gidx_base*{{ p.dim }})+(BLOCK_SIZE*{{ k }})+lid];
+      {{ p.name(pre='local_') }}[(BLOCK_SIZE*{{ k }})+lid] = {{ p.devname() }}[(gidx_base*{{ p.dim }})+(BLOCK_SIZE*{{ k }})+lid];
         {%- endfor %}
-      }
       {%- endfor %}
+      {{ self.memfence() }}
 
       int jj = jjbase + lid;
       if (jj < nneigh) {
