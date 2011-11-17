@@ -28,6 +28,11 @@ double get_cuda_m0() { return m0.total_time(); }
 double get_cuda_k0() { return k0.total_time(); }
 double get_cuda_m1() { return m1.total_time(); }
 
+#ifdef TRACE
+#warning Turning TRACE on will affect timing results!
+#include "cuPrintf.cu"
+#endif
+
 using namespace std;
 
 {{ classname }}CudaWrapper::{{ classname }}CudaWrapper(
@@ -124,6 +129,9 @@ void {{ classname }}CudaWrapper::run(
     printf("Pre-compute-kernel error: %s.\n", cudaGetErrorString(err));
     exit(1);
   }
+#ifdef TRACE
+  cudaPrintfInit();
+#endif
   k0.start();
   if (kernel == TPA) {
     {{ name }}_tpa<<<tpa_grid_size, block_size>>>(
@@ -158,6 +166,10 @@ void {{ classname }}CudaWrapper::run(
   }
   cudaThreadSynchronize();
   k0.stop_and_add_to_total();
+#ifdef TRACE
+  cudaPrintfDisplay(stdout, true);
+  cudaPrintfEnd();
+#endif
   err = cudaGetLastError();
   if (err != cudaSuccess) {
     printf("Post-compute-kernel error: %s.\n", cudaGetErrorString(err));
