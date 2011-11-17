@@ -68,39 +68,54 @@
   {#- TODO: DEAL WITH P,RW DATA #}
 
   if (idx < N && nneigh > 0) {
-    for (int jj=lid; jj<nneigh; jj+= block_size) {
-      // load particle j data
-      int nidx = nidx_base + jj;
-      int j = neighidx[nidx];
-      {%- for p in params if p.is_type('P', 'RO') %}
-      {{- assign(p, 'j', 'j')|indent(2) -}}
-      {%- endfor %}
-      {# not possible to load per-particle j data #}
-      {% for p in params if p.is_type('N', '-') %}
-      {{- "// load per-neighbor data" if loop.first -}}
-      {{- assign(p, '', 'nidx')|indent(2) -}}
-      {%- else -%}
+    for (int jjbase=0; jjbase<nneigh; jjbase+=block_size) {
+      int gidx_base = nidx_base + jjbase;
+      {%- for k in range(maxdim) %}
+      if (jjbase + lid < nneigh) {
+        {%- for p in params if p.is_type('N', '-') and k < p.dim %}
+        {{ p.name(pre='local_') }}[(BLOCK_SIZE*{{ k }})+lid] = {{ p.devname() }}[(gidx_base*{{ p.dim }})+(BLOCK_SIZE*{{ k }})+lid];
+        {%- endfor %}
+      }
       {%- endfor %}
 
-      // do pairwise calculation
-      {{ name }}_pair_kernel(
-        {%- for p in params -%}
-          {% set outer_loop = loop %}
-          {% for n in p.tagged_name() -%}
-            {% set comma = not (outer_loop.last and loop.last) %}
-            {%- if p.dim == 1 -%}
-      {{ '&' if p.is_type('-', 'RW') or p.is_type('-','SUM') }}{{ n }}{{ ', ' if comma }}
-            {%- else -%}
-      {{ n }}{{ ', ' if comma }}
-            {%- endif -%}
+      int jj = jjbase + lid;
+      if (jj < nneigh) {
+        // load particle j data
+        int nidx = nidx_base + jj;
+        int j = neighidx[nidx];
+        {%- for p in params if p.is_type('P', 'RO') %}
+        {{- assign(p, 'j', 'j')|indent(4) -}}
+        {%- endfor %}
+        {# not possible to load per-particle j data #}
+        {% for p in params if p.is_type('N', '-') %}
+        {{- "// load per-neighbor data" if loop.first -}}
+        {{- assign(p, '', 'nidx')|indent(4) -}}
+        {%- else -%}
+        {%- endfor %}
+
+        // do pairwise calculation
+        {{ name }}_pair_kernel(
+#if TRACE
+          idx, j,
+#endif
+          {%- for p in params -%}
+            {% set outer_loop = loop %}
+            {% for n in p.tagged_name() -%}
+              {% set comma = not (outer_loop.last and loop.last) %}
+              {%- if p.dim == 1 -%}
+        {{ '&' if p.is_type('-', 'RW') or p.is_type('-','SUM') }}{{ n }}{{ ', ' if comma }}
+              {%- else -%}
+        {{ n }}{{ ', ' if comma }}
+              {%- endif -%}
+            {%- endfor -%}
           {%- endfor -%}
-        {%- endfor -%}
-      );
+        );
 
-      // writeback per-neighbor RW data
-      {%- for p in params if p.is_type('N', 'RW') -%}
-        {{- assigninv(p,'','nidx')|indent(2) -}}
-      {%- endfor %}
+        // writeback per-neighbor RW data
+        {%- for p in params if p.is_type('N', 'RW') -%}
+          {{- assigninv(p,'','nidx')|indent(4) -}}
+        {%- endfor %}
+      }
     }
   }
 

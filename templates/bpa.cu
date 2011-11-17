@@ -41,6 +41,10 @@ extern __shared__ char array[];
   {%- for p in params if p.is_type('P', 'RO') %}
   __shared__ {{ p.type }} {{ p.name(pre='local_') }}[{{ p.dim }}];
   {%- endfor %}
+
+  {%- for p in params if p.is_type('N', '-') %}
+  __shared__ {{ p.type }} {{ p.name(pre='local_') }}[BLOCK_SIZE*{{ p.dim }}];
+  {%- endfor %}
 {% endblock %}
 
 {% block kidx %}
