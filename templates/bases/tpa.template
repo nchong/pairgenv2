@@ -106,7 +106,7 @@
 
       // do pairwise calculation
       {{ name }}_pair_kernel(
-#if TRACE
+#ifdef TRACE
         idx, j,
 #endif
         {%- for p in params -%}

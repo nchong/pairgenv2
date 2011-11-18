@@ -88,13 +88,13 @@
         {# not possible to load per-particle j data #}
         {% for p in params if p.is_type('N', '-') %}
         {{- "// load per-neighbor data" if loop.first -}}
-        {{- assign(p, '', 'nidx')|indent(4) -}}
+        {{- localassign(p, '', 'lid')|indent(4) -}}
         {%- else -%}
         {%- endfor %}
 
         // do pairwise calculation
         {{ name }}_pair_kernel(
-#if TRACE
+#ifdef TRACE
           idx, j,
 #endif
           {%- for p in params -%}
