@@ -111,10 +111,32 @@
         );
 
         // writeback per-neighbor RW data
+#if 0
         {%- for p in params if p.is_type('N', 'RW') -%}
           {{- assigninv(p,'','nidx')|indent(4) -}}
         {%- endfor %}
+#endif
+        {%- for p in params if p.is_type('N', 'RW') -%}
+          {% if p.dim > 1 -%}
+            {% for k in range(p.dim) %}
+        {{ p.name(pre='local_') }}[(lid*3)+{{ k }}] = {{ p.name() }}[{{k}}];
+            {%- endfor -%}
+          {%- else %}
+        {{ p.name(pre='local_') }}[lid] = {{ p.name() }};
+          {%- endif -%}
+        {%- endfor %}
       }
+
+      {{ self.memfence() }}
+      {%- for p in params if p.is_type('N', 'RW') -%}
+      {%- endfor %}
+      {%- for k in range(maxdim) %}
+        {%- for p in params if p.is_type('N', 'RW') and k < p.dim %}
+      if ((jjbase*{{ p.dim }})+(BLOCK_SIZE*{{ k }})+lid < nneigh*{{ p.dim }}) {
+        {{ p.devname() }}[(gidx_base*{{ p.dim }})+(BLOCK_SIZE*{{ k }})+lid] = {{ p.name(pre='local_') }}[(BLOCK_SIZE*{{ k }})+lid];
+      }
+        {%- endfor %}
+      {%- endfor %}
     }
   }
 
