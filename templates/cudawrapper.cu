@@ -129,10 +129,10 @@ void {{ classname }}CudaWrapper::run(
     printf("Pre-compute-kernel error: %s.\n", cudaGetErrorString(err));
     exit(1);
   }
-  k0.start();
 #ifdef TRACE
   cudaPrintfInit();
 #endif
+  k0.start();
   if (kernel == TPA) {
     {{ name }}_tpa<<<tpa_grid_size, block_size>>>(
       N,

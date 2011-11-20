@@ -64,14 +64,6 @@ void hertz_pair_kernel(
     double torquei_delta[3], 
     double shear[3], 
     int *touch) {
-#ifdef TRACE
-  if (i == TRACE) {
-    printf("i is TRACE, j is %d: ", j);
-  } else if (j == TRACE) {
-    printf("i is %d, j is TRACE: ", i);
-  }
-#endif
-
   // del is the vector from j to i
   double delx = xi[0] - xj[0];
   double dely = xi[1] - xj[1];
@@ -85,11 +77,6 @@ void hertz_pair_kernel(
     shear[0] = 0.0;
     shear[1] = 0.0;
     shear[2] = 0.0;
-#ifdef TRACE
-    if (i == TRACE || j == TRACE) {
-      printf("miss\n");
-    }
-#endif
   } else {
     //distance between centres of atoms i and j
     //or, magnitude of del vector

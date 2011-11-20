@@ -60,7 +60,9 @@ if __name__ == '__main__':
   # process all templates in templates/ directory
   # (ignoring temporary files and anything in the macros directory)
   env = Environment(loader=PackageLoader('pairgen', 'templates'))
-  istemplate = lambda x: not x.startswith('.') and not x.startswith('macros')
+  istemplate = lambda x: not x.startswith('.') and \
+                         not x.startswith('macros') and \
+                         not x.startswith('bases')
   for t in env.list_templates(filter_func=istemplate):
     output = name + '_' + t
     template = env.get_template(t)
