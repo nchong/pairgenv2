@@ -1,10 +1,6 @@
 {% extends 'bases/tpa.template' %}
 {% block extraheaders %}
 #include "{{name}}_pair_kernel.cu"
-
-#ifndef BLOCK_SIZE
-#error You need to #define BLOCK_SIZE
-#endif
 {% endblock %}
 
 {% block kqualifier %} __global__ {% endblock %}
@@ -29,16 +25,14 @@
   {%- endfor -%}
 {% endblock %}
 
-{% block sharedmem %}
-  {%- for p in params if p.is_type('P', 'RO') %}
-  __shared__ {{ p.type }} {{ p.name(pre='local_') }}[BLOCK_SIZE*{{ p.dim }}];
-  {%- endfor %}
-{% endblock %}
+{% block sharedmem %} {% endblock %}
 
 {% block kidx %}
   int lid = threadIdx.x;
   int bid = blockIdx.x * blockDim.x;
   int idx = threadIdx.x + bid;
 {% endblock %}
+
+{% block smem_qualifier %} __shared__ {% endblock %}
 
 {% block memfence %} __threadfence_block(); {% endblock %}

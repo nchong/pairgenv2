@@ -42,10 +42,19 @@ using namespace std;
     {% endfor %}
     stringstream extra_flags;
     extra_flags << " -I {{ cwd }}";
-    extra_flags << " -DBLOCK_SIZE=" << wx;
+    extra_flags << " -D BLOCK_SIZE=" << wx;
     {% for c in consts -%}
     extra_flags << " -D {{ c.hashdefine() }}=" << {{ c.name(pre='h_')}};
     {% endfor %}
+#ifdef STAGE_PARTICLE_I_DATA
+    extra_flags << " -D STAGE_PARTICLE_I_DATA";
+#ifdef RANGECHECK
+    extra_flags << " -D RANGECHECK";
+#endif
+#endif
+#ifdef STAGE_NEIGHBOR_DATA
+    extra_flags << " -D STAGE_NEIGHBOR_DATA";
+#endif
 #if DEBUG
     cerr << "[DEBUG] Compiling with extra_flags = [" << extra_flags.str() << "]" << endl;
     cerr << "[DEBUG] Kernel TpA parameters gx=" << tpa_gx << " wx=" << wx << endl;

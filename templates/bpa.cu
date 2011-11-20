@@ -37,14 +37,6 @@ extern __shared__ char array[];
   {%- set offset = offset + " + (blockDim.x*%d*sizeof(%s))" % (p.dim, p.type) %}
   {%- else -%}
   {% endfor %}
-
-  {%- for p in params if p.is_type('P', 'RO') %}
-  __shared__ {{ p.type }} {{ p.name(pre='local_') }}[{{ p.dim }}];
-  {%- endfor %}
-
-  {%- for p in params if p.is_type('N', '-') %}
-  __shared__ {{ p.type }} {{ p.name(pre='local_') }}[BLOCK_SIZE*{{ p.dim }}];
-  {%- endfor %}
 {% endblock %}
 
 {% block kidx %}
@@ -52,5 +44,7 @@ extern __shared__ char array[];
   int idx = blockIdx.x;
   int block_size = blockDim.x;
 {% endblock %}
+
+{% block smem_qualifier %} __shared__ {% endblock %}
 
 {% block memfence %} __threadfence_block(); {% endblock %}

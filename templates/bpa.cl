@@ -35,20 +35,14 @@
   {%- endfor -%}
 {% endblock %}
 
-{% block sharedmem %}
-  {%- for p in params if p.is_type('P', 'RO') %}
-  __local {{ p.type }} {{ p.name(pre='local_') }}[{{ p.dim }}];
-  {%- endfor %}
-
-  {%- for p in params if p.is_type('N', '-') %}
-  __local {{ p.type }} {{ p.name(pre='local_') }}[BLOCK_SIZE*{{ p.dim }}];
-  {%- endfor %}
-{% endblock %}
+{% block sharedmem %} {# empty #} {% endblock %}
 
 {% block kidx %}
   int lid = get_local_id(0);
   int idx = get_group_id(0);
   int block_size = get_local_size(0);
 {% endblock %}
+
+{% block smem_qualifer %} __local {% endblock %}
 
 {% block memfence %} mem_fence(CLK_LOCAL_MEM_FENCE); {% endblock %}

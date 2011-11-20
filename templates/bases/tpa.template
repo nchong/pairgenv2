@@ -1,6 +1,9 @@
 {% from 'macros/parameter.jinja' import localassign, assign, assigninv %}
 #ifndef {{ headername }}_TPA_H
 #define {{ headername }}_TPA_H
+#ifndef BLOCK_SIZE
+#error You need to #define BLOCK_SIZE
+#endif
 {% block extraheaders %}
 {% endblock %}
 
@@ -27,6 +30,11 @@
   {% endblock %}
 ) {
   {% block sharedmem %} {% endblock %}
+#ifdef STAGE_PARTICLE_I_DATA
+  {%- for p in params if p.is_type('P', 'RO') %}
+  {% block smem_qualifer %} {% endblock %} {{ p.type }} {{ p.name(pre='local_') }}[BLOCK_SIZE*{{ p.dim }}];
+  {%- endfor %}
+#endif
 
   // register copies of particle and neighbor data
   {%- for p in params if not p.is_type('P', 'SUM') -%}
@@ -37,6 +45,7 @@
 
   {% block kidx %} {# define lid, bid and idx #} {% endblock %}
 
+#ifdef STAGE_PARTICLE_I_DATA
   // load particle(i) data into shared memory
 #ifdef RANGECHECK
   if (idx < N) {
@@ -64,21 +73,24 @@
   // required because we stride across per-particle data of dim>1 in block steps to ensure coalescing
   // ie, this thread does not consume what it loads (except for the first load)
   {% block memfence %}{% endblock %}
+#endif
 
   if (idx < N && numneigh[idx] > 0) {
     // load particle i data
+#ifdef STAGE_PARTICLE_I_DATA
     {% for p in params if p.is_type('P', 'RO') %}
     {{- "// per-particle RO data" if loop.first -}}
       {{- localassign(p, 'i', 'lid') -}}
     {%- else -%}
     {%- endfor %}
-{#- TODO: DEAL WITH P,RW DATA -#}
-{#-  {% for p in params if p.is_type('P', 'RW') %}
-    {{- "// per-particle RW data" if loop.first -}}
+#else
+    {% for p in params if p.is_type('P', 'RO') %}
+    {{- "// per-particle RO data" if loop.first -}}
       {{- assign(p, 'i', 'idx') -}}
     {%- else -%}
     {%- endfor %}
-#}
+#endif
+    {#- TODO: DEAL WITH P,RW DATA -#}
     {% for p in params if p.is_type('P', 'SUM') %}
     {{- "// per-particle SUM data" if loop.first -}}
       {%- if p.dim > 1 %}
@@ -107,7 +119,7 @@
       // do pairwise calculation
       {{ name }}_pair_kernel(
 #ifdef TRACE
-        idx, j,
+            idx, j,
 #endif
         {%- for p in params -%}
           {% set outer_loop = loop %}

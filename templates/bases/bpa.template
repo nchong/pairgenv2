@@ -27,6 +27,16 @@
   {% endblock %}
 ) {
   {% block sharedmem %} {% endblock %}
+#ifdef STAGE_PARTICLE_I_DATA
+  {%- for p in params if p.is_type('P', 'RO') %}
+  {% block smem_qualifier %} {% endblock %} {{ p.type }} {{ p.name(pre='local_') }}[{{ p.dim }}];
+  {%- endfor %}
+#endif
+#ifdef STAGE_NEIGHBOR_DATA
+  {%- for p in params if p.is_type('N', '-') %}
+  {{ self.smem_qualifier() }} {{ p.type }} {{ p.name(pre='local_') }}[BLOCK_SIZE*{{ p.dim }}];
+  {%- endfor %}
+#endif
 
   // register copies of per-particle and per-neighbor data
   {%- for p in params if not p.is_type('P', 'SUM') -%}
@@ -39,6 +49,7 @@
   int nneigh = numneigh[idx];
   int nidx_base = offset[idx];
 
+#ifdef STAGE_PARTICLE_I_DATA
   // load particle(i) data into shared memory
   {%- for k in range(maxdim) %}
   if (lid == {{ k }}) {
@@ -48,6 +59,21 @@
   }
   {%- endfor %}
   {% block memfence %} {% endblock %}
+
+  // load particle i data
+  {% for p in params if p.is_type('P', 'RO') %}
+  {{- "// per-particle RO data" if loop.first -}}
+  {{- localassign(p, 'i', idx=None) -}}
+  {%- else -%}
+  {%- endfor %}
+  {#- TODO: DEAL WITH P,RW DATA #}
+#else
+  {% for p in params if p.is_type('P', 'RO') %}
+  {{- "// per-particle RO data" if loop.first -}}
+  {{- assign(p, 'i', 'idx') -}}
+  {%- else -%}
+  {%- endfor %}
+#endif
 
   {% for p in params if p.is_type('P', 'SUM') %}
   {{- "// per-thread accumulators" if loop.first -}}
@@ -59,23 +85,18 @@
   {%- else -%}
   {%- endfor %}
 
-  // load particle i data
-  {% for p in params if p.is_type('P', 'RO') %}
-  {{- "// per-particle RO data" if loop.first -}}
-  {{- localassign(p, 'i', idx=None) -}}
-  {%- else -%}
-  {%- endfor %}
-  {#- TODO: DEAL WITH P,RW DATA #}
-
   if (idx < N && nneigh > 0) {
     for (int jjbase=0; jjbase<nneigh; jjbase+=block_size) {
-      int gidx_base = nidx_base + jjbase; {# THE FOLLOWING IS DANGEROUS AND MAY SEGFAULT #}
+#ifdef STAGE_NEIGHBOR_DATA
+      // The following relies on padding within the neighbor list to be safe
+      int gidx_base = nidx_base + jjbase;
       {%- for k in range(maxdim) %}
         {%- for p in params if p.is_type('N', '-') and k < p.dim %}
       {{ p.name(pre='local_') }}[(BLOCK_SIZE*{{ k }})+lid] = {{ p.devname() }}[(gidx_base*{{ p.dim }})+(BLOCK_SIZE*{{ k }})+lid];
         {%- endfor %}
       {%- endfor %}
       {{ self.memfence() }}
+#endif
 
       int jj = jjbase + lid;
       if (jj < nneigh) {
@@ -86,16 +107,24 @@
         {{- assign(p, 'j', 'j')|indent(4) -}}
         {%- endfor %}
         {# not possible to load per-particle j data #}
+#ifdef STAGE_NEIGHBOR_DATA
         {% for p in params if p.is_type('N', '-') %}
         {{- "// load per-neighbor data" if loop.first -}}
         {{- localassign(p, '', 'lid')|indent(4) -}}
         {%- else -%}
         {%- endfor %}
+#else
+        {% for p in params if p.is_type('N', '-') %}
+        {{- "// load per-neighbor data" if loop.first -}}
+        {{- assign(p, '', 'nidx')|indent(4) -}}
+        {%- else -%}
+        {%- endfor %}
+#endif
 
         // do pairwise calculation
         {{ name }}_pair_kernel(
 #ifdef TRACE
-          idx, j,
+            idx, j,
 #endif
           {%- for p in params -%}
             {% set outer_loop = loop %}
@@ -111,11 +140,7 @@
         );
 
         // writeback per-neighbor RW data
-#if 0
-        {%- for p in params if p.is_type('N', 'RW') -%}
-          {{- assigninv(p,'','nidx')|indent(4) -}}
-        {%- endfor %}
-#endif
+#ifdef STAGE_NEIGHBOR_DATA
         {%- for p in params if p.is_type('N', 'RW') -%}
           {% if p.dim > 1 -%}
             {% for k in range(p.dim) %}
@@ -125,8 +150,14 @@
         {{ p.name(pre='local_') }}[lid] = {{ p.name() }};
           {%- endif -%}
         {%- endfor %}
+#else
+        {%- for p in params if p.is_type('N', 'RW') -%}
+          {{- assigninv(p,'','nidx')|indent(4) -}}
+        {%- endfor %}
+#endif
       }
 
+#ifdef STAGE_NEIGHBOR_DATA
       {{ self.memfence() }}
       {%- for p in params if p.is_type('N', 'RW') -%}
       {%- endfor %}
@@ -137,6 +168,7 @@
       }
         {%- endfor %}
       {%- endfor %}
+#endif
     }
   }
 

@@ -8,10 +8,6 @@
 #endif
 #pragma OPENCL EXTENSION cl_khr_fp64: enable
 {% endif %}
-
-#ifndef BLOCK_SIZE
-#error You need to #define BLOCK_SIZE
-#endif
 {% endblock %}
 
 {% block kqualifier %} __kernel {% endblock %}
@@ -36,16 +32,14 @@
   {%- endfor -%}
 {% endblock %}
 
-{% block sharedmem %}
-  {%- for p in params if p.is_type('P', 'RO') %}
-  __local {{ p.type }} {{ p.name(pre='local_') }}[BLOCK_SIZE*{{ p.dim }}];
-  {%- endfor %}
-{% endblock %}
+{% block sharedmem %} {% endblock %}
 
 {% block kidx %}
   int lid = get_local_id(0);
   int bid = get_group_id(0) * get_local_size(0);
   int idx = get_global_id(0);
 {% endblock %}
+
+{% block smem_qualifer %} __local {% endblock %}
 
 {% block memfence %} mem_fence(CLK_LOCAL_MEM_FENCE); {% endblock %}
