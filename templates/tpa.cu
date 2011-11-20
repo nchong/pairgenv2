@@ -127,6 +127,9 @@ __global__ void {{name}}_tpa(
 
       // do pairwise calculation
       {{ name }}_pair_kernel(
+#ifdef TRACE
+        idx, j,
+#endif
         {%- for p in params -%}
           {% set outer_loop = loop %}
           {% for n in p.tagged_name() -%}
