@@ -78,9 +78,9 @@ void run(struct params *input, int num_iter) {
   per_iter[0].set_total_time(get_cuda_m0());
   per_iter[1].set_total_time(get_cuda_k0());
   per_iter[2].set_total_time(get_cuda_m1());
-  per_iter_timings.push_back(vector<double>(num_iter));
-  per_iter_timings.push_back(vector<double>(num_iter));
-  per_iter_timings.push_back(vector<double>(num_iter));
+  per_iter_timings.push_back(get_cuda_m0_raw());
+  per_iter_timings.push_back(get_cuda_k0_raw());
+  per_iter_timings.push_back(get_cuda_m1_raw());
 
   one_time.push_back(SimpleTimer("cleanup"));
   one_time.back().start();

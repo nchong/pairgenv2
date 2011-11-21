@@ -2,7 +2,7 @@ include ../../Makefile.common
 TOP := $(dir $(lastword $(MAKEFILE_LIST)))
 
 # GLOBAL BUILD OPTIONS
-override BLOCK_SIZE ?= 32
+override BLOCK_SIZE ?= 32 #AFFECTS CUDA BUILDS ONLY
 override BUILD_DIR ?= .
 
 # COMMON FLAGS

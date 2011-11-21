@@ -3,9 +3,10 @@
 
 #include "{{ name }}_cudaneighlist.h"
 
-double get_cuda_m0();
-double get_cuda_k0();
-double get_cuda_m1();
+#include <vector>
+double get_cuda_m0(); std::vector<double> &get_cuda_m0_raw();
+double get_cuda_k0(); std::vector<double> &get_cuda_k0_raw();
+double get_cuda_m1(); std::vector<double> &get_cuda_m1_raw();
 
 class {{ classname }}CudaWrapper {
   private:

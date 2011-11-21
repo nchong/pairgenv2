@@ -20,20 +20,24 @@
 #include <sstream>
 #include <iostream>
 
+using namespace std;
+
 #include "posix_timer.h"
-static SimpleTimer m0;
-static SimpleTimer k0;
-static SimpleTimer m1;
+#include <vector>
+static SimpleTimer m0; static vector<double> m0_raw;
+static SimpleTimer k0; static vector<double> k0_raw;
+static SimpleTimer m1; static vector<double> m1_raw;
 double get_cuda_m0() { return m0.total_time(); }
 double get_cuda_k0() { return k0.total_time(); }
 double get_cuda_m1() { return m1.total_time(); }
+vector<double> &get_cuda_m0_raw() { return m0_raw; }
+vector<double> &get_cuda_k0_raw() { return k0_raw; }
+vector<double> &get_cuda_m1_raw() { return m1_raw; }
 
 #ifdef TRACE
 #warning Turning TRACE on will affect timing results!
 #include "cuPrintf.cu"
 #endif
-
-using namespace std;
 
 {{ classname }}CudaWrapper::{{ classname }}CudaWrapper(
     int block_size,
@@ -121,7 +125,7 @@ void {{ classname }}CudaWrapper::run(
   {% for p in params if p.is_type('P', 'RW') or p.is_type('P', 'SUM') -%}
     cudaMemcpy({{ memcpy_to_dev_args(p) }});
   {% endfor %}
-  m0.stop_and_add_to_total();
+  m0_raw.push_back(m0.stop_and_add_to_total());
 
   cudaThreadSynchronize();
   cudaError_t err = cudaGetLastError();
@@ -165,7 +169,7 @@ void {{ classname }}CudaWrapper::run(
     );
   }
   cudaThreadSynchronize();
-  k0.stop_and_add_to_total();
+  k0_raw.push_back(k0.stop_and_add_to_total());
 #ifdef TRACE
   cudaPrintfDisplay(stdout, true);
   cudaPrintfEnd();
@@ -186,6 +190,6 @@ void {{ classname }}CudaWrapper::run(
     d_nl->unload_{{ p.name() }}({{ p.name(pre='h_',suf='pages') }});
   }
   {% endfor %}
-  m1.stop_and_add_to_total();
+  m1_raw.push_back(m1.stop_and_add_to_total());
 }
 

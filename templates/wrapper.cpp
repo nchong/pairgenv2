@@ -11,15 +11,19 @@
 #include <sstream>
 #include <iostream>
 
+using namespace std;
+
 #include "posix_timer.h"
-static SimpleTimer m0;
-static SimpleTimer k0;
-static SimpleTimer m1;
+#include <vector>
+static SimpleTimer m0; static vector<double> m0_raw;
+static SimpleTimer k0; static vector<double> k0_raw;
+static SimpleTimer m1; static vector<double> m1_raw;
 double get_m0() { return m0.total_time(); }
 double get_k0() { return k0.total_time(); }
 double get_m1() { return m1.total_time(); }
-
-using namespace std;
+vector<double> &get_m0_raw() { return m0_raw; }
+vector<double> &get_k0_raw() { return k0_raw; }
+vector<double> &get_m1_raw() { return m1_raw; }
 
 {{ classname }}Wrapper::{{ classname }}Wrapper(
     CLWrapper &clw, size_t wx,
@@ -112,7 +116,7 @@ void {{ classname }}Wrapper::run(
   {% for p in params if p.is_type('P', 'RW') or p.is_type('P', 'SUM') -%}
     clw.memcpy_to_dev({{ memcpy_args(p) }});
   {% endfor %}
-  m0.stop_and_add_to_total();
+  m0_raw.push_back(m0.stop_and_add_to_total());
 
   k0.start();
   if (kernel == TPA) {
@@ -155,7 +159,7 @@ void {{ classname }}Wrapper::run(
     clw.run_kernel(bpa, /*dim=*/1, &bpa_gx, &wx);
   }
   clw.flush_command_queue();
-  k0.stop_and_add_to_total();
+  k0_raw.push_back(k0.stop_and_add_to_total());
 
   m1.start();
   {% for p in params if p.is_type('P', 'RW') or p.is_type('P', 'SUM') -%}
@@ -167,6 +171,6 @@ void {{ classname }}Wrapper::run(
     d_nl->unload_{{ p.name() }}({{ p.name(pre='h_',suf='pages') }});
   }
   {% endfor %}
-  m1.stop_and_add_to_total();
+  m1_raw.push_back(m1.stop_and_add_to_total());
 }
 

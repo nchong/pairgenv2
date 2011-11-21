@@ -4,9 +4,10 @@
 #include "clwrapper.h"
 #include "{{ name }}_clneighlist.h"
 
-double get_m0();
-double get_k0();
-double get_m1();
+#include <vector>
+double get_m0(); std::vector<double> &get_m0_raw();
+double get_k0(); std::vector<double> &get_k0_raw();
+double get_m1(); std::vector<double> &get_m1_raw();
 
 class {{ classname }}Wrapper {
   private:
