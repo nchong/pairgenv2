@@ -37,6 +37,7 @@ void run(struct params *input, int num_iter) {
 #endif
 
     per_iter[0].start();
+    per_iter_timings.push_back(vector<double>(num_iter));
     for (int ii=0; ii<nl->inum; ii++) {
       int i = nl->ilist[ii];
       for (int jj=0; jj<nl->numneigh[i]; jj++) {
@@ -60,7 +61,8 @@ void run(struct params *input, int num_iter) {
         );
       }
     }
-    per_iter[0].stop_and_add_to_total();
+    double delta = per_iter[0].stop_and_add_to_total();
+    per_iter_timings[0][run] = delta;
 
 #ifdef TRACE
     if (run == 0) {
