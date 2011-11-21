@@ -30,7 +30,7 @@ class {{ classname }}Wrapper {
 
   public:
     {{ classname }}Wrapper(
-      CLWrapper &clw, size_t wx,
+      CLWrapper &clw, size_t wx, const char *flags,
       int N, int maxpage, int pgsize,
       {% for c in consts -%}
         {{ c.decl(pre='h_', include_dim=False) }},

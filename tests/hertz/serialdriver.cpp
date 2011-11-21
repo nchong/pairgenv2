@@ -23,6 +23,7 @@ void run(struct params *input, int num_iter) {
   int    **tpages = NULL;
 
   per_iter.push_back(SimpleTimer("run"));
+  per_iter_timings.push_back(vector<double>(num_iter));
   for (int run=0; run<num_iter; run++) {
     //make copies
     copy(input->force,  input->force  + input->nnode*3, force);
@@ -37,7 +38,6 @@ void run(struct params *input, int num_iter) {
 #endif
 
     per_iter[0].start();
-    per_iter_timings.push_back(vector<double>(num_iter));
     for (int ii=0; ii<nl->inum; ii++) {
       int i = nl->ilist[ii];
       for (int jj=0; jj<nl->numneigh[i]; jj++) {

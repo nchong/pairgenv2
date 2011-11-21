@@ -11,7 +11,15 @@
 using namespace std;
 
 void run(struct params *input, int num_iter) {
-  //cout << clinfo();
+  if (input->verbose) {
+    cout << clinfo();
+    cout << "# platform " << input->cl_platform
+         << " device "    << input->cl_device
+         << endl;
+    if (input->cl_flags) {
+      cout << "# flags: " << input->cl_flags << endl;
+    }
+  }
   CLWrapper clw(/*platform=*/0,/*device=*/0,/*profiling=*/false);
   NeighListLike *nl = new NeighListLike(input);
 
@@ -19,7 +27,7 @@ void run(struct params *input, int num_iter) {
   one_time.back().start();
   size_t wx = BLOCK_SIZE;
   HertzWrapper *hw = new HertzWrapper(
-    clw, wx,
+    clw, wx, input->cl_flags,
     input->nnode, nl->maxpage, nl->pgsize,
     //constants
     input->dt,

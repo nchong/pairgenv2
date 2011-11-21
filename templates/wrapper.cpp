@@ -26,7 +26,7 @@ vector<double> &get_k0_raw() { return k0_raw; }
 vector<double> &get_m1_raw() { return m1_raw; }
 
 {{ classname }}Wrapper::{{ classname }}Wrapper(
-    CLWrapper &clw, size_t wx,
+    CLWrapper &clw, size_t wx, const char *flags,
     int N, int maxpage, int pgsize,
     {% for c in consts -%}
       {{ c.decl(pre='h_', include_dim=False) }},
@@ -50,15 +50,9 @@ vector<double> &get_m1_raw() { return m1_raw; }
     {% for c in consts -%}
     extra_flags << " -D {{ c.hashdefine() }}=" << {{ c.name(pre='h_')}};
     {% endfor %}
-#ifdef STAGE_PARTICLE_I_DATA
-    extra_flags << " -D STAGE_PARTICLE_I_DATA";
-#ifdef RANGECHECK
-    extra_flags << " -D RANGECHECK";
-#endif
-#endif
-#ifdef STAGE_NEIGHBOR_DATA
-    extra_flags << " -D STAGE_NEIGHBOR_DATA";
-#endif
+    if (flags) {
+      extra_flags << " " << flags;
+    }
 #if DEBUG
     cerr << "[DEBUG] Compiling with extra_flags = [" << extra_flags.str() << "]" << endl;
     cerr << "[DEBUG] Kernel TpA parameters gx=" << tpa_gx << " wx=" << wx << endl;
