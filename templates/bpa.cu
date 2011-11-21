@@ -3,7 +3,7 @@
 #include "{{name}}_pair_kernel.cu"
 
 // dynamically allocated at launch time
-// see Section 4.2.2.3 in NVIDIA CUDA Programming Guide (v2.0)
+// see Section B2.3 in NVIDIA CUDA Programming Guide (v4.0)
 extern __shared__ char array[];
 {% endblock %}
 
