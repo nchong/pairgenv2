@@ -20,7 +20,7 @@ void run(struct params *input, int num_iter) {
       cout << "# flags: " << input->cl_flags << endl;
     }
   }
-  CLWrapper clw(/*platform=*/0,/*device=*/0,/*profiling=*/false);
+  CLWrapper clw(/*platform=*/input->cl_platform,/*device=*/input->cl_device,/*profiling=*/false);
   NeighListLike *nl = new NeighListLike(input);
 
   one_time.push_back(SimpleTimer("initialization"));
