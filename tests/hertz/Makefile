@@ -19,7 +19,7 @@ SERIAL_OUT = serial
 CUDA_OUT = cuda_tpa cuda_bpa \
            cuda_tpa_modulo cuda_tpa_rangecheck \
            cuda_bpa_i cuda_bpa_nbor cuda_bpa_i_nbor
-CL_OUT = cl_tpa cl_bpa
+CL_OUT = cl
 all: $(SERIAL_OUT) $(OUT) $(CUDA_OUT) $(CL_OUT)
 INC += -I $(TOP)/common
 LIB += -lgpunl
@@ -33,11 +33,8 @@ $(OUT): $(OBJS)
 $(SERIAL_OUT): serialdriver.cpp hertz_kernel.h
 	$(CXX) $(CXXFLAGS) $(DRIVERFLAGS) $(INC) $(LIB) -o $(BUILD_DIR)/$@ $<
 
-cl_tpa: driver.cpp $(OUT)
-	$(CXX) -DKERNEL=TPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
-
-cl_bpa: driver.cpp $(OUT)
-	$(CXX) -DKERNEL=BPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
+cl: driver.cpp $(OUT)
+	$(CXX) $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
 
 cuda_tpa: cudadriver.cpp $(OUT)
 	$(CXX) -DKERNEL=TPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt

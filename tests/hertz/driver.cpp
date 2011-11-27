@@ -1,21 +1,19 @@
 #include "framework.h"
 #include "hertz_wrapper.h"
 
-#ifndef BLOCK_SIZE
-#error "You need to #define BLOCK_SIZE"
-#endif
-#ifndef KERNEL
-#error "You need to #define KERNEL TPA|BPA"
-#endif
-
 using namespace std;
 
 void run(struct params *input, int num_iter) {
+  HertzWrapper::kernel_decomposition k =
+    (input->cl_kernel == 0) ? HertzWrapper::TPA : HertzWrapper::BPA;
+
   if (input->verbose) {
     cout << clinfo();
     cout << "# platform " << input->cl_platform
          << " device "    << input->cl_device
          << endl;
+    cout << "# kernel: " << (k == 0 ? "TPA" : "BPA") << endl;
+    cout << "# block_size: " << input->cl_blocksize << endl;
     if (input->cl_flags) {
       cout << "# flags: " << input->cl_flags << endl;
     }
@@ -25,7 +23,7 @@ void run(struct params *input, int num_iter) {
 
   one_time.push_back(SimpleTimer("initialization"));
   one_time.back().start();
-  size_t wx = BLOCK_SIZE;
+  size_t wx = input->cl_blocksize;
   HertzWrapper *hw = new HertzWrapper(
     clw, wx, input->cl_flags,
     input->nnode, nl->maxpage, nl->pgsize,
@@ -66,7 +64,7 @@ void run(struct params *input, int num_iter) {
     nl->copy_into(firstdouble, dpages, firsttouch, tpages);
 
     hw->run(
-      HertzWrapper::KERNEL,
+      k,
       input->x,
       input->v,
       input->omega,
