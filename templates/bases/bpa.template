@@ -58,7 +58,7 @@
     {%- endfor %}
   }
   {%- endfor %}
-  {% block memfence %} {% endblock %}
+  {% block barrier %} {% endblock %}
 
   // load particle i data
   {% for p in params if p.is_type('P', 'RO') %}
@@ -95,7 +95,7 @@
       {{ p.name(pre='local_') }}[(BLOCK_SIZE*{{ k }})+lid] = {{ p.devname() }}[(gidx_base*{{ p.dim }})+(BLOCK_SIZE*{{ k }})+lid];
         {%- endfor %}
       {%- endfor %}
-      {{ self.memfence() }}
+      {{ self.barrier() }}
 #endif
 
       int jj = jjbase + lid;
@@ -158,7 +158,7 @@
       }
 
 #ifdef STAGE_NEIGHBOR_DATA
-      {{ self.memfence() }}
+      {{ self.barrier() }}
       {%- for p in params if p.is_type('N', 'RW') -%}
       {%- endfor %}
       {%- for k in range(maxdim) %}
@@ -184,7 +184,7 @@
   {%- else -%}
   {%- endfor %}
 
-  {{ self.memfence() }}
+  {{ self.barrier() }}
 
   // local reduction and writeback of per-particle data
   if (idx < N && nneigh > 1 && lid == 0) {

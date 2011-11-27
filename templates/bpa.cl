@@ -45,4 +45,4 @@
 
 {% block smem_qualifer %} __local {% endblock %}
 
-{% block memfence %} mem_fence(CLK_LOCAL_MEM_FENCE); {% endblock %}
+{% block barrier %} barrier(CLK_LOCAL_MEM_FENCE); {% endblock %}
