@@ -20,7 +20,8 @@ CUDA_OUT = cuda_tpa cuda_bpa \
            cuda_tpa_modulo cuda_tpa_rangecheck \
            cuda_bpa_i cuda_bpa_nbor cuda_bpa_i_nbor
 CL_OUT = cl
-all: $(SERIAL_OUT) $(OUT) $(CUDA_OUT) $(CL_OUT)
+BIN_OUT = calc
+all: $(SERIAL_OUT) $(OUT) $(CUDA_OUT) $(CL_OUT) $(BIN_OUT)
 INC += -I $(TOP)/common
 LIB += -lgpunl
 
@@ -57,7 +58,10 @@ cuda_bpa_nbor: cudadriver.cpp $(OUT)
 cuda_bpa_i_nbor: cudadriver.cpp $(OUT)
 	$(CXX) -DSTAGE_PARTICLE_I_DATA -DSTAGE_NEIGHBOR_DATA -DKERNEL=BPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
 
-hertz_kernel.h hertz_cudaneighlist.cu hertz_cudawrapper.cu hertz_clneighlist.cpp hertz_wrapper.cpp:
+calc: hertz_calc.cpp
+	$(CXX) $(CXXFLAGS) -o $(BUILD_DIR)/$@ $<
+
+hertz_calc.cpp hertz_kernel.h hertz_cudaneighlist.cu hertz_cudawrapper.cu hertz_clneighlist.cpp hertz_wrapper.cpp:
 	../../pairgen.py hertz.yml
 	cp reference.hertz_kernel.h new.hertz_kernel.h
 	mv -f new.hertz_kernel.h hertz_kernel.h
@@ -66,4 +70,4 @@ hertz_kernel.h hertz_cudaneighlist.cu hertz_cudawrapper.cu hertz_clneighlist.cpp
 clean:
 	rm -f *.o $(SERIAL_OUT) $(OUT) $(CUDA_OUT) $(CL_OUT)
 veryclean: clean
-	rm -f hertz_*
+	rm -f hertz_* $(BIN_OUT)
