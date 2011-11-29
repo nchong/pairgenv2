@@ -6,10 +6,11 @@
 #include "{{ name }}_wrapper.h"
 #include "{{ name }}_clneighlist.h"
 #include <cassert>
-#include <cstdlib>
 #include <cstdio>
-#include <sstream>
+#include <cstdlib>
 #include <iostream>
+#include <limits>
+#include <sstream>
 
 using namespace std;
 
@@ -45,6 +46,7 @@ vector<double> &get_m1_raw() { return m1_raw; }
       clw.memcpy_to_dev({{ memcpy_args(p) }});
     {% endfor %}
     stringstream extra_flags;
+    extra_flags.precision(std::numeric_limits<double>::digits10);
     extra_flags << " -I {{ cwd }}";
     extra_flags << " -D BLOCK_SIZE=" << wx;
     {% for c in consts -%}
