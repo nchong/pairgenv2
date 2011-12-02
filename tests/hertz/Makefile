@@ -16,9 +16,7 @@ endif
 # OUTPUTS
 OUT = libhertz.so
 SERIAL_OUT = serial
-CUDA_OUT = cuda_tpa cuda_bpa \
-           cuda_tpa_modulo cuda_tpa_rangecheck \
-           cuda_bpa_i cuda_bpa_nbor cuda_bpa_i_nbor
+CUDA_OUT = cuda_tpa cuda_bpa
 CL_OUT = cl
 BIN_OUT = calc
 all: $(SERIAL_OUT) $(OUT) $(CUDA_OUT) $(CL_OUT) $(BIN_OUT)
@@ -42,21 +40,6 @@ cuda_tpa: cudadriver.cpp $(OUT)
 
 cuda_bpa: cudadriver.cpp $(OUT)
 	$(CXX) -DKERNEL=BPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
-
-cuda_tpa_modulo: cudadriver.cpp $(OUT)
-	$(CXX) -DSTAGE_PARTICLE_I_DATA              -DKERNEL=TPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
-
-cuda_tpa_rangecheck: cudadriver.cpp $(OUT)
-	$(CXX) -DSTAGE_PARTICLE_I_DATA -DRANGECHECK -DKERNEL=TPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
-
-cuda_bpa_i: cudadriver.cpp $(OUT)
-	$(CXX) -DSTAGE_PARTICLE_I_DATA                       -DKERNEL=BPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
-
-cuda_bpa_nbor: cudadriver.cpp $(OUT)
-	$(CXX)                         -DSTAGE_NEIGHBOR_DATA -DKERNEL=BPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
-
-cuda_bpa_i_nbor: cudadriver.cpp $(OUT)
-	$(CXX) -DSTAGE_PARTICLE_I_DATA -DSTAGE_NEIGHBOR_DATA -DKERNEL=BPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
 
 calc: hertz_calc.cpp
 	$(CXX) $(CXXFLAGS) -o $(BUILD_DIR)/$@ $<
