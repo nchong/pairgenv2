@@ -40,6 +40,6 @@
   int idx = get_global_id(0);
 {% endblock %}
 
-{% block smem_qualifer %} __local {% endblock %}
+{% block smem_qualifier %} __local {% endblock %}
 
 {% block barrier %} barrier(CLK_LOCAL_MEM_FENCE); {% endblock %}
