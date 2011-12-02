@@ -6,7 +6,8 @@ override BLOCK_SIZE ?= 32 #AFFECTS CUDA BUILDS ONLY
 override BUILD_DIR ?= .
 
 # COMMON FLAGS
-override NVCCFLAGS += -Xptxas -v -DBLOCK_SIZE=$(BLOCK_SIZE)
+override KERNELFLAGS ?=
+override NVCCFLAGS += -Xptxas -v -DBLOCK_SIZE=$(BLOCK_SIZE) $(KERNELFLAGS)
 DRIVERFLAGS = -DBLOCK_SIZE=$(BLOCK_SIZE) -DPOSIX_TIMER
 ifneq ($(strip $(TRACE)),)
   override CXXFLAGS  += -DTRACE=$(TRACE)
@@ -24,7 +25,7 @@ INC += -I $(TOP)/common
 LIB += -lgpunl
 
 OBJS = hertz_clneighlist.o hertz_wrapper.o
-OBJS += hertz_cudaneighlist.o hertz_cudawrapper.o
+OBJS += hertz_cudaneighlist.o
 
 $(OUT): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INC) $(SHARED) -o $(BUILD_DIR)/$@ $^ $(LIB)
@@ -35,11 +36,11 @@ $(SERIAL_OUT): serialdriver.cpp hertz_kernel.h
 cl: driver.cpp $(OUT)
 	$(CXX) $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
 
-cuda_tpa: cudadriver.cpp $(OUT)
-	$(CXX) -DKERNEL=TPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
+cuda_tpa: cudadriver.cpp hertz_cudawrapper.o $(OUT)
+	$(CXX) -DKERNEL=TPA -DKERNELFLAGS='$(KERNELFLAGS)' $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< hertz_cudawrapper.o $(LIB) -L$(BUILD_DIR) -lhertz -lrt
 
-cuda_bpa: cudadriver.cpp $(OUT)
-	$(CXX) -DKERNEL=BPA $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< $(LIB) -L$(BUILD_DIR) -lhertz -lrt
+cuda_bpa: cudadriver.cpp hertz_cudawrapper.o $(OUT)
+	$(CXX) -DKERNEL=BPA -DKERNELFLAGS='$(KERNELFLAGS)' $(DRIVERFLAGS) $(CXXFLAGS) $(INC) -I. -o $(BUILD_DIR)/$@ $< hertz_cudawrapper.o $(LIB) -L$(BUILD_DIR) -lhertz -lrt
 
 calc: hertz_calc.cpp
 	$(CXX) $(CXXFLAGS) -o $(BUILD_DIR)/$@ $<

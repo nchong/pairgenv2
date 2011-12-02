@@ -8,9 +8,17 @@
 #error "You need to #define KERNEL TPA|BPA"
 #endif
 
+#define XQUOTE(s) QUOTE(s)
+#define QUOTE(str) #str
+
 using namespace std;
 
 void run(struct params *input, int num_iter) {
+  if (input->verbose) {
+    cout << "# kernel: " << XQUOTE(KERNEL) << endl;
+    cout << "# flags: "  << XQUOTE(KERNELFLAGS) << endl;
+  }
+
   NeighListLike *nl = new NeighListLike(input);
 
   int block_size = BLOCK_SIZE;
