@@ -35,4 +35,4 @@
 
 {% block smem_qualifier %} __shared__ {% endblock %}
 
-{% block memfence %} __threadfence_block(); {% endblock %}
+{% block barrier %} __syncthreads(); {% endblock %}

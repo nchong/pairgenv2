@@ -32,7 +32,7 @@
   {% block sharedmem %} {% endblock %}
 #ifdef STAGE_PARTICLE_I_DATA
   {%- for p in params if p.is_type('P', 'RO') %}
-  {% block smem_qualifer %} {% endblock %} {{ p.type }} {{ p.name(pre='local_') }}[BLOCK_SIZE*{{ p.dim }}];
+  {% block smem_qualifier %} {% endblock %} {{ p.type }} {{ p.name(pre='local_') }}[BLOCK_SIZE*{{ p.dim }}];
   {%- endfor %}
 #endif
 
@@ -72,7 +72,7 @@
 #endif
   // required because we stride across per-particle data of dim>1 in block steps to ensure coalescing
   // ie, this thread does not consume what it loads (except for the first load)
-  {% block memfence %}{% endblock %}
+  {% block barrier %}{% endblock %}
 #endif
 
   if (idx < N && numneigh[idx] > 0) {
