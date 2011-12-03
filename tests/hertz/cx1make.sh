@@ -13,6 +13,13 @@ unset LD_PRELOAD
 export CXX=icc
 # disable warnings
 export CXXFLAGS='-wd383,981,1572,444'
+# 869: parameter <x> was never referenced
+# http://origin-software.intel.com/en-us/articles/cdiag869/
+# This is warning about typei and typej not being used in [hertz_kernel.h].
+# The standard trick to comment out the parameter name like so:
+#    int /* typei is unused */, int /* typej is unused */,
+# causes the OpenCL compiler to die, so we'll have to put up with suppressing the warning here instead.
+
 # 383: value copied to temporary, reference to temporary used
 # http://origin-software.intel.com/en-us/articles/cdiag383/
 # This is warning about pushing onto our vector of timers (one_time and per_iter).
