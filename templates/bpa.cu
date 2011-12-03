@@ -41,7 +41,7 @@ extern __shared__ char array[];
 
 {% block kidx %}
   int lid = threadIdx.x;
-  int idx = blockIdx.x;
+  int idx = blockIdx.x + (blockIdx.y * gridDim.x);
   int block_size = blockDim.x;
 {% endblock %}
 
