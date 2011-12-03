@@ -2,14 +2,27 @@
  * Simple calculator to estimate the dataset size of the pair style.
  */
 
+#include "{{ name }}_calc.h"
 #include <iomanip>
 #include <iostream>
 #include <sstream>
-#include <string>
 
 #define COLWIDTH 16
 
 using namespace std;
+
+int main(int argc, char **argv) {
+  if (argc < 3) {
+    cout << "Usage: ";
+    cout << argv[0] << " <nparticles> <nneighbors>" << endl;
+    return 1;
+  }
+  int nparticles = stoi(argv[1]);
+  int nneighbors = stoi(argv[2]);
+
+  print_sizes(nparticles, nneighbors);
+  return 0;
+}
 
 string human_readable(int nbytes) {
   stringstream ss;
@@ -84,19 +97,5 @@ int stoi(const char *s) {
   istringstream iss(s);
   iss >> x;
   return x;
-}
-
-int main(int argc, char **argv) {
-  if (argc < 3) {
-    cout << "Usage: ";
-    cout << argv[0] << " <nparticles> <nneighbors>" << endl;
-    return(1);
-  }
-  int nparticles = stoi(argv[1]);
-  int nneighbors = stoi(argv[2]);
-
-  print_sizes(nparticles, nneighbors);
-  return 0;
-
 }
 

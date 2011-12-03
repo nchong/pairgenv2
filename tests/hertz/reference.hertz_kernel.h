@@ -59,7 +59,7 @@ void hertz_pair_kernel(
     double omegai[3], double omegaj[3], 
     double radiusi, double radiusj, 
     double massi, double massj, 
-    int typei, int typej, 
+    int /*typei is unused*/, int /*typej is unused*/,
     double forcei_delta[3], 
     double torquei_delta[3], 
     double shear[3], 

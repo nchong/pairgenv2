@@ -30,7 +30,7 @@
 {% block kidx %}
   int lid = threadIdx.x;
   int bid = blockIdx.x * blockDim.x;
-  int idx = threadIdx.x + bid;
+  int idx = lid + bid;
 {% endblock %}
 
 {% block smem_qualifier %} __shared__ {% endblock %}
