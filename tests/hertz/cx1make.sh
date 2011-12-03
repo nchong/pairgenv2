@@ -12,7 +12,7 @@ unset LD_PRELOAD
 # common build options
 export CXX=icc
 # disable warnings
-export CXXFLAGS='-wd383,981,1572,444'
+export CXXFLAGS='-wd869,383,981,1572,444'
 # 869: parameter <x> was never referenced
 # http://origin-software.intel.com/en-us/articles/cdiag869/
 # This is warning about typei and typej not being used in [hertz_kernel.h].
