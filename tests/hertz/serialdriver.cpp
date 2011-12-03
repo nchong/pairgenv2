@@ -1,3 +1,4 @@
+#include "posix_timer.h"
 #include "framework.h"
 #include "hertz_pair_kernel.h"
 
