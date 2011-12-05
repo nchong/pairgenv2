@@ -187,7 +187,7 @@
   {{ self.barrier() }}
 
   // local reduction and writeback of per-particle data
-  if (idx < N && nneigh > 1 && lid == 0) {
+  if (idx < N && nneigh > 0 && lid == 0) {
     for (int i=1; i<block_size; i++) {
       {%- for p in params if p.is_type('P', 'SUM') %}
         {%- if p.dim > 1 %}
