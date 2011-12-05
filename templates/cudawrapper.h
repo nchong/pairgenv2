@@ -13,8 +13,6 @@ class {{ classname }}CudaWrapper {
     int block_size;
     int N;
     int tpa_grid_size;
-    int bpa_grid_x_size;
-    int bpa_grid_y_size;
     dim3 bpa_grid_size;
     size_t bpa_shared_mem_size;
 
