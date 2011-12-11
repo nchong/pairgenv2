@@ -56,7 +56,7 @@ vector<double> &get_cuda_m1_raw() { return m1_raw; }
   block_size(block_size),
   N(N),
   tpa_grid_size((N/block_size)+1),
-  bpa_grid_size(min(N, MAX_GRID_DIM), max((int)ceil(N/MAX_GRID_DIM),1)),
+  bpa_grid_size(min(N, MAX_GRID_DIM), max((int)ceil((float)N/MAX_GRID_DIM),1)),
   // size of per-block array for
   {%- for p in params if p.is_type('P', 'SUM') -%}
     {{ ' ' }}{{ p.devname() }}{{ ',' if not loop.last }}
