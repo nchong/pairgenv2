@@ -1,10 +1,10 @@
 #include "cudaneighlist.h"
-#include "scanref.h"
-
 #include "thrust/scan.h"
+#include "hostneighlist.h"
 
 #include <cassert>
 
+#define ONLY_HOST true
 #define PARANOID false
 
 __global__ void decode_neighlist_p1(
@@ -120,6 +120,11 @@ void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int rel
 
   cudaMemcpy(d_numneigh, numneigh, d_numneigh_size, cudaMemcpyHostToDevice);
   load_pages(d_neighidx, pages);
+#if ONLY_HOST
+  int *h_offset = host_decode_neighlist(nparticles, maxpage, numneigh, firstneigh, pages, pgsize);
+  cudaMemcpy(d_offset, h_offset, d_offset_size, cudaMemcpyHostToDevice);
+  delete[] h_offset;
+#else
   thrust::device_ptr<int> thrust_numneigh(d_numneigh);
   thrust::device_ptr<int> thrust_offset(d_offset);
 
@@ -147,6 +152,7 @@ void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int rel
       pgsize,
       d_offset);
   }
+#endif
 
 #if PARANOID
   check_decode(numneigh, firstneigh);

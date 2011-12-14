@@ -1,10 +1,11 @@
 #include "clneighlist.h"
 #include "scan.h"
-#include "scanref.h"
 #include "segscan.h"
+#include "hostneighlist.h"
 
 #include <cassert>
 
+#define ONLY_HOST true
 #define PARANOID false
 
 CLNeighList::CLNeighList(CLWrapper &clw, size_t wx,
@@ -90,6 +91,11 @@ void CLNeighList::reload(int *numneigh, int **firstneigh, int **pages, int reloa
   clw.memcpy_to_dev(d_numneigh, d_numneigh_size, numneigh);
   load_pages(d_neighidx, pages);
 
+#if ONLY_HOST
+  int *h_offset = host_decode_neighlist(nparticles, maxpage, numneigh, firstneigh, pages, pgsize);
+  clw.memcpy_to_dev(d_offset, d_offset_size, h_offset);
+  delete[] h_offset;
+#else
   // our aim is to construct, for each particle i, an offset into d_neighidx that is the start of the list of n neighbors for i
   clw.memcpy_to_dev(d_offset, d_offset_size, numneigh);
   if (maxpage == 1) {
@@ -127,6 +133,7 @@ void CLNeighList::reload(int *numneigh, int **firstneigh, int **pages, int reloa
       d_offset);
     tdecode += clw.run_kernel_with_timing(decode_neighlist_p2, /*dim=*/1, &gx, &wx);
   }
+#endif
 
 #if PARANOID
     check_decode(numneigh, firstneigh);

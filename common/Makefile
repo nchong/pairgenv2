@@ -9,7 +9,7 @@ all: $(OUT)
 # OPENCL TO HEADER CONVERSION
 OPENCL2INCLUDE=$(TOP)/cl2include.sh
 
-OBJS = clneighlist.o cudaneighlist.o
+OBJS = clneighlist.o cudaneighlist.o hostneighlist.o
 
 $(OUT): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INC) $(LIB) $(SHARED) -o $@ $^
@@ -20,10 +20,10 @@ clneighlist.o: clneighlist.cpp decode.cl.h
 %.cl.h: %.cl
 	$(OPENCL2INCLUDE) $< $@
 
-cltest: test_clneighlist.cpp clneighlist.o
+cltest: test_clneighlist.cpp clneighlist.o hostneighlist.o
 	$(CXX) $(CXXFLAGS) $(INC) $(LIB) -o $@ $^
 
-cudatest: test_cudaneighlist.cpp cudaneighlist.o
+cudatest: test_cudaneighlist.cpp cudaneighlist.o hostneighlist.o
 	$(CXX) $(CXXFLAGS) $(INC) $(LIB) -o $@ $^
 
 .PHONY: clean
