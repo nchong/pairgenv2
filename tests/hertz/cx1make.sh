@@ -3,13 +3,14 @@
 # required tools
 module load python/2.6.4
 module load intel-suite/11.1
-export CLDIR=/apps/opencl/ati-2.5/
-export CUDADIR=/apps/cuda/3.2.16/
+export CLDIR=/apps/opencl/ati-2.5
+export CUDADIR=/apps/cuda/4.0.17
 
 # turn off some annoying icc warnings
 unset LD_PRELOAD
 
 # common build options
+export NVCCFLAGS='-Xptxas -dlcm=ca'
 export CXX=icc
 # disable warnings
 export CXXFLAGS='-wd869,383,981,1572,444'
