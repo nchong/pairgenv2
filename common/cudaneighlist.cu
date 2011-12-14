@@ -4,8 +4,9 @@
 
 #include <cassert>
 
-#define ONLY_HOST true
-#define PARANOID false
+#ifndef MAX_GRID_DIM
+#error You need to #define MAX_GRID_DIM (see Makefile.config)
+#endif
 
 __global__ void decode_neighlist_p1(
   //inputs
@@ -17,7 +18,7 @@ __global__ void decode_neighlist_p1(
   //outputs
   int *pageidx
 ) {
-  int tid = threadIdx.x + blockIdx.x * blockDim.x;
+  int tid = threadIdx.x + (blockIdx.x * blockDim.x) + (blockIdx.y * gridDim.x);
 
   if (tid < nparticles) {
     int *myfirstneigh = firstneigh[tid];
@@ -40,7 +41,7 @@ __global__ void decode_neighlist_p2(
   //inout
   int *offset
 ) {
-  int tid = threadIdx.x + blockIdx.x * blockDim.x;
+  int tid = threadIdx.x + (blockIdx.x * blockDim.x) + (blockIdx.y * gridDim.x);
 
   if (tid < nparticles) {
     int mypage = pageidx[tid];
@@ -120,7 +121,7 @@ void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int rel
 
   cudaMemcpy(d_numneigh, numneigh, d_numneigh_size, cudaMemcpyHostToDevice);
   load_pages(d_neighidx, pages);
-#if ONLY_HOST
+#if HOST_DECODE
   int *h_offset = host_decode_neighlist(nparticles, maxpage, numneigh, firstneigh, pages, pgsize);
   cudaMemcpy(d_offset, h_offset, d_offset_size, cudaMemcpyHostToDevice);
   delete[] h_offset;

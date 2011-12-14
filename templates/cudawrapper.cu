@@ -41,7 +41,9 @@ vector<double> &get_cuda_m1_raw() { return m1_raw; }
 #include "cuPrintf.cu"
 #endif
 
-#define MAX_GRID_DIM 65535
+#ifndef MAX_GRID_DIM
+#error You need to #define MAX_GRID_DIM (see Makefile.config)
+#endif
 
 {{ classname }}CudaWrapper::{{ classname }}CudaWrapper(
     int block_size,

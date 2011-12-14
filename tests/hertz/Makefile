@@ -1,9 +1,15 @@
 include ../../Makefile.common
 TOP := $(dir $(lastword $(MAKEFILE_LIST)))
 
-# GLOBAL BUILD OPTIONS
-override BLOCK_SIZE ?= 32 #AFFECTS CUDA BUILDS ONLY
+# ---------------------------------------------------------------------------
+# BUILD OPTIONS
+# ---------------------------------------------------------------------------
+# This option only affects CUDA implementations
+override BLOCK_SIZE ?= 32
+
+# Where to place binaries
 override BUILD_DIR ?= .
+# ---------------------------------------------------------------------------
 
 # COMMON FLAGS
 override DEBUG ?= 0

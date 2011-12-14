@@ -5,9 +5,6 @@
 
 #include <cassert>
 
-#define ONLY_HOST true
-#define PARANOID false
-
 CLNeighList::CLNeighList(CLWrapper &clw, size_t wx,
   int nparticles, int maxpage, int pgsize) :
 
@@ -91,7 +88,7 @@ void CLNeighList::reload(int *numneigh, int **firstneigh, int **pages, int reloa
   clw.memcpy_to_dev(d_numneigh, d_numneigh_size, numneigh);
   load_pages(d_neighidx, pages);
 
-#if ONLY_HOST
+#if HOST_DECODE
   int *h_offset = host_decode_neighlist(nparticles, maxpage, numneigh, firstneigh, pages, pgsize);
   clw.memcpy_to_dev(d_offset, d_offset_size, h_offset);
   delete[] h_offset;
