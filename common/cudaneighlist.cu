@@ -3,6 +3,7 @@
 #include "hostneighlist.h"
 
 #include <cassert>
+#include <cmath>
 
 #ifndef MAX_GRID_DIM
 #error You need to #define MAX_GRID_DIM (see Makefile.config)
@@ -52,9 +53,10 @@ __global__ void decode_neighlist_p2(
 CudaNeighList::CudaNeighList(
   int block_size,
   int nparticles, int maxpage, int pgsize) :
-  block_size(block_size),
-  grid_size((nparticles/block_size)+1),
   nparticles(nparticles), maxpage(maxpage), pgsize(pgsize),
+  block_size(block_size),
+  grid_size(min(nparticles/block_size, MAX_GRID_DIM),
+            max((int)ceil(((float)nparticles/block_size)/MAX_GRID_DIM), 1)),
 
   d_numneigh_size(nparticles * sizeof(int)),
   d_firstneigh_size(nparticles * sizeof(int *)),

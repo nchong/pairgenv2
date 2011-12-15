@@ -5,8 +5,8 @@
 # MAX_GRID_DIM should be the maximum number of allocatable threads in the grid's x dimension.
 # This is required to determine when to spill into using a 2D grid and is device (and kernel) specific.
 # Use deviceQuery (in the nvidia SDK) to help determine this value.
-# Otherwise, 65536 is probably sensible (for compute capability >= 2.0).
-MAX_GRID_DIM = 65536
+# Otherwise, 65535 is probably sensible (for compute capability >= 2.0).
+MAX_GRID_DIM = 65535
 
 # CUDA_ARCH is the nvidia architecture of your device.
 CUDA_ARCH = sm_20

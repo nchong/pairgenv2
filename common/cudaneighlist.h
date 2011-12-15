@@ -12,15 +12,15 @@ using namespace std;
  * CUDA Neighbor List manager
  */
 class CudaNeighList {
-  protected:
-    //block size
-    int block_size;
-    int grid_size;
   public:
     //these parameters control the size of the neighbor list
     int nparticles;
     int maxpage;
     int pgsize;
+  protected:
+    //block size
+    int block_size;
+    dim3 grid_size;
   protected:
     //sizes of neighbor list structures
     size_t d_numneigh_size;
