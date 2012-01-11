@@ -122,18 +122,23 @@ void CudaNeighList::resize(int new_maxpage) {
 
 /*
  *    CPU            DEV
- *
- *    numneigh ----> [d_numneigh] -------------------------------(scan) --> [d_offset]
- *                                                                 /
- *  .(if maxpage > 1)...........................                  /
- *  | firstneigh -->  d_firstneigh -- (decode) |-> [d_pageidx] --'
- *  `........                           /      |
- *          |                          /       |
- *    pages |------>  d_pages --------'        |
-        \   |...................................
+ *                                                                            ,-------. 
+ *                                                                            v       |
+ *    numneigh ----> [d_numneigh] -----------------------------(scan) --> [d_offset]  |
+ *                                                               /            |       |
+ *  .(if maxpage > 1).........................................  /           (dec2) ---'
+ *  | firstneigh -->  d_firstneigh -- (dec1) --> [d_pageidx] --'            (dec3)
+ *  `........                           /                    |
+ *          |                          /                     |
+ *    pages |------>  d_pages --------'                      |
+        \   `................................................'
  *        \
  *         '-------> [d_neighidx]
  *
+ * dec1 = decode_neighlist_p1
+ * scan = maxpage > 1 ? exclusive_scan : exclusive_scan_by_key
+ * dec2 = decode_neighlist_p2
+ * dec3 = decode_neighlist_p3
  */
 void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int reload_maxpage) {
   // nb: we do not expect nparticles or pgsize to change
