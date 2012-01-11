@@ -75,6 +75,9 @@ class CudaNeighList {
 
   private:
     void check_decode(int *numneigh, int **firstneigh);
+#if TPN
+    void reload_inverse();
+#endif
 
   public:
     CudaNeighList(int block_size,

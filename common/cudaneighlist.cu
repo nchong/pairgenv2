@@ -125,7 +125,7 @@ CudaNeighList::~CudaNeighList() {
 }
 
 /*
- * Make bigger device arrays
+ * Make bigger device arrays (too bad CUDA has no realloc)
  * NB: does not update maxpage!
  */
 void CudaNeighList::resize(int new_maxpage) {
@@ -138,10 +138,13 @@ void CudaNeighList::resize(int new_maxpage) {
 #if TPN
   cudaFree(d_valid);
   cudaFree(d_dati);
+  cudaFree(d_tad);
   d_valid_size    = d_neighidx_size;
   d_dati_size     = d_neighidx_size;
+  d_tad_size      = d_neighidx_size;
   cudaMalloc((void **)&d_valid, d_valid_size);
   cudaMalloc((void **)&d_dati, d_dati_size);
+  cudaMalloc((void **)&d_tad, d_tad_size);
 #endif
 }
 
@@ -237,6 +240,12 @@ void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int rel
   check_decode(numneigh, firstneigh);
 #endif
 }
+
+#if TPN
+void reload_inverse() {
+
+}
+#endif
 
 /* end to end check of decode */
 void CudaNeighList::check_decode(int *numneigh, int **firstneigh) {
