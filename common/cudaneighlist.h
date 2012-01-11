@@ -29,7 +29,13 @@ class CudaNeighList {
     size_t d_pageidx_size;
     size_t d_offset_size;
     size_t d_neighidx_size;
+#if TPN
     size_t d_valid_size;
+    size_t d_dati_size;
+    size_t d_tad_size;
+    size_t d_ffo_size;
+    size_t d_nel_size;
+#endif
   public:
     //device neighbor list structures
     int  *d_numneigh;
@@ -38,7 +44,13 @@ class CudaNeighList {
     int  *d_pageidx;
     int  *d_offset;
     int  *d_neighidx;
+#if TPN
     int  *d_valid;
+    int  *d_dati;
+    int  *d_tad;
+    int  *d_ffo;
+    int  *d_nel;
+#endif
   private:
     //timings
     float tload; float tunload;

@@ -4,6 +4,11 @@ TOP := $(dir $(lastword $(MAKEFILE_LIST)))
 # ---------------------------------------------------------------------------
 # BUILD OPTIONS
 # ---------------------------------------------------------------------------
+# If TPN is
+#   0 then the CUDA implementation generates structures for TPA and BPA decompositions.
+#   1 then the CUDA implementation generates additional datastructures for TPN decompositions.
+# TPA = Thread per Atom / BPA = Block per Atom / TPN = Thread per Neighbor
+TPN ?= 0
 #
 # If EMBED_CL is
 #   0 then the OpenCL kernels are compiled from file.
@@ -24,7 +29,8 @@ PARANOID  ?= 0
 
 OUT = libgpunl.so
 all: $(OUT)
-override CXXFLAGS += -DHOST_DECODE=$(HOST_DECODE) -DPARANOID=$(PARANOID)
+override NVCCFLAGS += -DHOST_DECODE=$(HOST_DECODE) -DPARANOID=$(PARANOID) -DTPN=$(TPN)
+override CXXFLAGS  += -DHOST_DECODE=$(HOST_DECODE) -DPARANOID=$(PARANOID)
 
 # OPENCL TO HEADER CONVERSION
 OPENCL2INCLUDE=$(TOP)/cl2include.sh

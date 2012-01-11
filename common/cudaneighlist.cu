@@ -56,13 +56,15 @@ __global__ void decode_neighlist_p3(
   int *numneigh,
   int *offset,
   //inout
-  int *valid
+  int *valid,
+  int *dati
 ) {
   int tid = threadIdx.x + (blockIdx.x * blockDim.x) + (blockIdx.y * gridDim.x);
 
   if (tid < nparticles) {
     for (int i=0; i<numneigh[tid]; i++) {
       valid[offset[tid]+i] = 1;
+      dati[offset[tid]+i] = tid;
     }
   }
 }
@@ -81,7 +83,13 @@ CudaNeighList::CudaNeighList(
   d_pageidx_size(d_numneigh_size),
   d_offset_size(d_numneigh_size),
   d_neighidx_size(maxpage * pgsize * sizeof(int)),
+#if TPN
   d_valid_size(d_neighidx_size),
+  d_dati_size(d_neighidx_size),
+  d_tad_size(d_neighidx_size),
+  d_ffo_size(d_numneigh_size),
+  d_nel_size(d_numneigh_size),
+#endif
 
   tload(0), tunload(0), tdecode(0)
 {
@@ -91,7 +99,13 @@ CudaNeighList::CudaNeighList(
   cudaMalloc((void **)&d_pageidx, d_pageidx_size);
   cudaMalloc((void **)&d_offset, d_offset_size);
   cudaMalloc((void **)&d_neighidx, d_neighidx_size);
+#if TPN
   cudaMalloc((void **)&d_valid, d_valid_size);
+  cudaMalloc((void **)&d_dati, d_dati_size);
+  cudaMalloc((void **)&d_tad, d_tad_size);
+  cudaMalloc((void **)&d_ffo, d_ffo_size);
+  cudaMalloc((void **)&d_nel, d_nel_size);
+#endif
 }
 
 CudaNeighList::~CudaNeighList() {
@@ -101,7 +115,13 @@ CudaNeighList::~CudaNeighList() {
   cudaFree(d_pageidx);
   cudaFree(d_offset);
   cudaFree(d_neighidx);
+#if TPN
   cudaFree(d_valid);
+  cudaFree(d_dati);
+  cudaFree(d_tad);
+  cudaFree(d_ffo);
+  cudaFree(d_nel);
+#endif
 }
 
 /*
@@ -111,13 +131,18 @@ CudaNeighList::~CudaNeighList() {
 void CudaNeighList::resize(int new_maxpage) {
   cudaFree(d_pages);
   cudaFree(d_neighidx);
-  cudaFree(d_valid);
   d_pages_size = new_maxpage * sizeof(int *);
   d_neighidx_size = new_maxpage * pgsize * sizeof(int);
-  d_valid_size    = d_neighidx_size;
   cudaMalloc((void **)&d_pages, d_pages_size);
   cudaMalloc((void **)&d_neighidx, d_neighidx_size);
+#if TPN
+  cudaFree(d_valid);
+  cudaFree(d_dati);
+  d_valid_size    = d_neighidx_size;
+  d_dati_size     = d_neighidx_size;
   cudaMalloc((void **)&d_valid, d_valid_size);
+  cudaMalloc((void **)&d_dati, d_dati_size);
+#endif
 }
 
 /*
@@ -127,7 +152,7 @@ void CudaNeighList::resize(int new_maxpage) {
  *    numneigh ----> [d_numneigh] -----------------------------(scan) --> [d_offset]  |
  *                                                               /            |       |
  *  .(if maxpage > 1).........................................  /           (dec2) ---'
- *  | firstneigh -->  d_firstneigh -- (dec1) --> [d_pageidx] --'            (dec3)
+ *  | firstneigh -->  d_firstneigh -- (dec1) --> [d_pageidx] --'
  *  `........                           /                    |
  *          |                          /                     |
  *    pages |------>  d_pages --------'                      |
@@ -138,7 +163,6 @@ void CudaNeighList::resize(int new_maxpage) {
  * dec1 = decode_neighlist_p1
  * scan = maxpage > 1 ? exclusive_scan : exclusive_scan_by_key
  * dec2 = decode_neighlist_p2
- * dec3 = decode_neighlist_p3
  */
 void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int reload_maxpage) {
   // nb: we do not expect nparticles or pgsize to change
@@ -153,17 +177,23 @@ void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int rel
 #if HOST_DECODE
   int *h_offset = host_decode_neighlist(nparticles, maxpage, numneigh, firstneigh, pages, pgsize);
   cudaMemcpy(d_offset, h_offset, d_offset_size, cudaMemcpyHostToDevice);
+#if TPN
   // simulate third part of decode
+  int *h_dati  = new int[maxpage*pgsize];
   int *h_valid = new int[maxpage*pgsize];
   std::fill_n(h_valid, maxpage*pgsize, 0);
   for (int i=0; i<nparticles; i++) {
     for (int k=0; k<numneigh[i]; k++) {
+      h_dati[ h_offset[i]+k] = i;
       h_valid[h_offset[i]+k] = 1;
     }
   }
+  cudaMemcpy(d_dati, h_dati, d_dati_size, cudaMemcpyHostToDevice);
   cudaMemcpy(d_valid, h_valid, d_valid_size, cudaMemcpyHostToDevice);
-  delete[] h_offset;
+  delete[] h_dati;
   delete[] h_valid;
+#endif
+  delete[] h_offset;
 #else
   thrust::device_ptr<int> thrust_numneigh(d_numneigh);
   thrust::device_ptr<int> thrust_offset(d_offset);
@@ -192,12 +222,15 @@ void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int rel
       pgsize,
       d_offset);
   }
+#if TPN
   cudaMemset(d_valid, 0, d_valid_size);
   decode_neighlist_p3<<<grid_size, block_size>>>(
     nparticles,
     d_numneigh,
     d_offset,
-    d_valid);
+    d_valid,
+    d_dati);
+#endif
 #endif
 
 #if PARANOID
