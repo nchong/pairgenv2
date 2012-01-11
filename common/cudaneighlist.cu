@@ -50,6 +50,23 @@ __global__ void decode_neighlist_p2(
   }
 }
 
+__global__ void decode_neighlist_p3(
+  //inputs
+  int nparticles,
+  int *numneigh,
+  int *offset,
+  //inout
+  int *valid
+) {
+  int tid = threadIdx.x + (blockIdx.x * blockDim.x) + (blockIdx.y * gridDim.x);
+
+  if (tid < nparticles) {
+    for (int i=0; i<numneigh[tid]; i++) {
+      valid[offset[tid]+i] = 1;
+    }
+  }
+}
+
 CudaNeighList::CudaNeighList(
   int block_size,
   int nparticles, int maxpage, int pgsize) :
@@ -61,10 +78,10 @@ CudaNeighList::CudaNeighList(
   d_numneigh_size(nparticles * sizeof(int)),
   d_firstneigh_size(nparticles * sizeof(int *)),
   d_pages_size(maxpage * sizeof(int *)),
-  d_pagebreak_size(d_numneigh_size),
   d_pageidx_size(d_numneigh_size),
   d_offset_size(d_numneigh_size),
   d_neighidx_size(maxpage * pgsize * sizeof(int)),
+  d_valid_size(d_neighidx_size),
 
   tload(0), tunload(0), tdecode(0)
 {
@@ -74,6 +91,7 @@ CudaNeighList::CudaNeighList(
   cudaMalloc((void **)&d_pageidx, d_pageidx_size);
   cudaMalloc((void **)&d_offset, d_offset_size);
   cudaMalloc((void **)&d_neighidx, d_neighidx_size);
+  cudaMalloc((void **)&d_valid, d_valid_size);
 }
 
 CudaNeighList::~CudaNeighList() {
@@ -83,6 +101,7 @@ CudaNeighList::~CudaNeighList() {
   cudaFree(d_pageidx);
   cudaFree(d_offset);
   cudaFree(d_neighidx);
+  cudaFree(d_valid);
 }
 
 /*
@@ -92,10 +111,13 @@ CudaNeighList::~CudaNeighList() {
 void CudaNeighList::resize(int new_maxpage) {
   cudaFree(d_pages);
   cudaFree(d_neighidx);
+  cudaFree(d_valid);
   d_pages_size = new_maxpage * sizeof(int *);
   d_neighidx_size = new_maxpage * pgsize * sizeof(int);
+  d_valid_size    = d_neighidx_size;
   cudaMalloc((void **)&d_pages, d_pages_size);
   cudaMalloc((void **)&d_neighidx, d_neighidx_size);
+  cudaMalloc((void **)&d_valid, d_valid_size);
 }
 
 /*
@@ -126,7 +148,17 @@ void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int rel
 #if HOST_DECODE
   int *h_offset = host_decode_neighlist(nparticles, maxpage, numneigh, firstneigh, pages, pgsize);
   cudaMemcpy(d_offset, h_offset, d_offset_size, cudaMemcpyHostToDevice);
+  // simulate third part of decode
+  int *h_valid = new int[maxpage*pgsize];
+  std::fill_n(h_valid, maxpage*pgsize, 0);
+  for (int i=0; i<nparticles; i++) {
+    for (int k=0; k<numneigh[i]; k++) {
+      h_valid[h_offset[i]+k] = 1;
+    }
+  }
+  cudaMemcpy(d_valid, h_valid, d_valid_size, cudaMemcpyHostToDevice);
   delete[] h_offset;
+  delete[] h_valid;
 #else
   thrust::device_ptr<int> thrust_numneigh(d_numneigh);
   thrust::device_ptr<int> thrust_offset(d_offset);
@@ -155,6 +187,12 @@ void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int rel
       pgsize,
       d_offset);
   }
+  cudaMemset(d_valid, 0, d_valid_size);
+  decode_neighlist_p3<<<grid_size, block_size>>>(
+    nparticles,
+    d_numneigh,
+    d_offset,
+    d_valid);
 #endif
 
 #if PARANOID

@@ -26,19 +26,19 @@ class CudaNeighList {
     size_t d_numneigh_size;
     size_t d_firstneigh_size;
     size_t d_pages_size;
-    size_t d_pagebreak_size;
     size_t d_pageidx_size;
     size_t d_offset_size;
     size_t d_neighidx_size;
+    size_t d_valid_size;
   public:
     //device neighbor list structures
     int  *d_numneigh;
     int **d_firstneigh;
     int **d_pages;
-    int  *d_pagebreak;
     int  *d_pageidx;
     int  *d_offset;
     int  *d_neighidx;
+    int  *d_valid;
   private:
     //timings
     float tload; float tunload;
