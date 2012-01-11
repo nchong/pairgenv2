@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstdio>
 
 #ifndef MAX_GRID_DIM
 #error You need to #define MAX_GRID_DIM (see Makefile.config)
@@ -323,7 +324,6 @@ void CudaNeighList::reload_inverse() {
   check_inverse();
 #endif
 }
-#endif
 
 /* end to end check of decode */
 void CudaNeighList::check_decode(int *numneigh, int **firstneigh) {
@@ -345,6 +345,7 @@ void CudaNeighList::check_decode(int *numneigh, int **firstneigh) {
 
 /* end to end check of inverse */
 void CudaNeighList::check_inverse() {
+  printf("check_inverse...");
   //nl
   int *valid = new int[maxpage*pgsize];
   int *datj  = new int[maxpage*pgsize];
@@ -367,4 +368,11 @@ void CudaNeighList::check_inverse() {
       assert(found);
     }
   }
+  printf("ok\n");
+  delete[] valid;
+  delete[] datj;
+  delete[] tad;
+  delete[] ffo;
+  delete[] nel;
 }
+#endif
