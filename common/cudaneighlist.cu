@@ -69,6 +69,46 @@ __global__ void decode_neighlist_p3(
   }
 }
 
+#if TPN
+__global__ void invert_neighlist_p1(
+  //inputs
+  int nparticles,
+  int *neighidx, int *offset, int *numneigh,
+  //outputs
+  int *nel       //nb: must be zeroed!
+) {
+  int tid = threadIdx.x + (blockIdx.x * blockDim.x) + (blockIdx.y * gridDim.x);
+
+  int n = numneigh[tid];
+  if (tid < nparticles && n > 0) {
+    int off = offset[tid];
+    for (int k=0; k<n; k++) {
+      int j = neighidx[off+k];
+      atomicAdd(&nel[j], 1);
+    }
+  }
+}
+
+__global__ void invert_neighlist_p2(
+  //inputs
+  int nneighbors,
+  int *valid,
+  int *neighidx,
+  int *ffo,
+  //outputs
+  int *tad,
+  int *nel       //nb: must be zeroed!
+) {
+  int tid = threadIdx.x + (blockIdx.x * blockDim.x) + (blockIdx.y * gridDim.x);
+
+  if (tid < nneighbors && valid[tid]) {
+    int j = neighidx[tid];
+    int k = atomicAdd(&nel[j], 1);
+    tad[ffo[j]+k] = tid;
+  }
+}
+#endif
+
 CudaNeighList::CudaNeighList(
   int block_size,
   int nparticles, int maxpage, int pgsize) :
@@ -76,6 +116,11 @@ CudaNeighList::CudaNeighList(
   block_size(block_size),
   grid_size(min(nparticles/block_size, MAX_GRID_DIM),
             max((int)ceil(((float)nparticles/block_size)/MAX_GRID_DIM), 1)),
+#if TPN
+  neighbor_grid_size(
+            min((maxpage*pgsize)/block_size, MAX_GRID_DIM),
+            max((int)ceil(((float)(maxpage*pgsize)/block_size)/MAX_GRID_DIM), 1)),
+#endif
 
   d_numneigh_size(nparticles * sizeof(int)),
   d_firstneigh_size(nparticles * sizeof(int *)),
@@ -242,8 +287,41 @@ void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int rel
 }
 
 #if TPN
-void reload_inverse() {
-
+/*
+ * DEV
+ *
+ *                                  .---(zero)--> (inv2) --> [d_nel]
+ *                                 /                ^        [d_tad]
+ *                                /                 |
+ * [d_neighidx] --+-(inv1)--> [d_nel] --(scan)--> [d_ffo]
+ *                |
+ * [d_offset] ----+
+ *                |
+ * [d_numneigh] --+
+ *
+ */
+void CudaNeighList::reload_inverse() {
+  cudaMemset(d_nel, 0, d_nel_size);
+  invert_neighlist_p1<<<grid_size, block_size>>>(
+    nparticles,
+    d_neighidx,
+    d_offset,
+    d_numneigh,
+    d_nel);
+  thrust::device_ptr<int> thrust_nel(d_nel);
+  thrust::device_ptr<int> thrust_ffo(d_ffo);
+  thrust::exclusive_scan(thrust_nel, thrust_nel + nparticles, thrust_ffo);
+  cudaMemset(d_nel, 0, d_nel_size);
+  invert_neighlist_p2<<<neighbor_grid_size, block_size>>>(
+    (maxpage*pgsize),
+    d_valid,
+    d_neighidx,
+    d_ffo,
+    d_tad,
+    d_nel);
+#if PARANOID
+  check_inverse();
+#endif
 }
 #endif
 
@@ -263,4 +341,30 @@ void CudaNeighList::check_decode(int *numneigh, int **firstneigh) {
   }
   delete[] neighidx;
   delete[] offset;
+}
+
+/* end to end check of inverse */
+void CudaNeighList::check_inverse() {
+  //nl
+  int *valid = new int[maxpage*pgsize];
+  int *datj  = new int[maxpage*pgsize];
+  //inverse nl
+  int *tad   = new int[maxpage*pgsize];
+  int *ffo   = new int[nparticles];
+  int *nel   = new int[nparticles];
+  cudaMemcpy(valid, d_valid,    d_valid_size,    cudaMemcpyDeviceToHost);
+  cudaMemcpy(datj,  d_neighidx, d_neighidx_size, cudaMemcpyDeviceToHost);
+  cudaMemcpy(tad,   d_tad,      d_tad_size,      cudaMemcpyDeviceToHost);
+  cudaMemcpy(ffo,   d_ffo,      d_ffo_size,      cudaMemcpyDeviceToHost);
+  cudaMemcpy(nel,   d_nel,      d_nel_size,      cudaMemcpyDeviceToHost);
+  for (int n=0; n<maxpage*pgsize; n++) {
+    if (valid[n]) {
+      int j = datj[n];
+      bool found = false;
+      for (int k=0; k<nel[j]; k++) {
+        found = found || (tad[ffo[j]+k] == n);
+      }
+      assert(found);
+    }
+  }
 }

@@ -21,6 +21,9 @@ class CudaNeighList {
     //block size
     int block_size;
     dim3 grid_size;
+#if TPN
+    dim3 neighbor_grid_size;
+#endif
   protected:
     //sizes of neighbor list structures
     size_t d_numneigh_size;
@@ -77,6 +80,7 @@ class CudaNeighList {
     void check_decode(int *numneigh, int **firstneigh);
 #if TPN
     void reload_inverse();
+    void check_inverse();
 #endif
 
   public:
