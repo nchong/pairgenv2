@@ -285,6 +285,11 @@ void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int rel
 #if PARANOID
   check_decode(numneigh, firstneigh);
 #endif
+
+#if TPN
+  reload_inverse();
+  check_inverse();
+#endif
 }
 
 #if TPN
