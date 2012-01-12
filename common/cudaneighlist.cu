@@ -209,9 +209,9 @@ void CudaNeighList::resize(int new_maxpage) {
  *        \
  *         '-------> [d_neighidx]
  *
- * dec1 = decode_neighlist_p1
+ * dec1 = decode_neighlist_p1 (TPA)
  * scan = maxpage > 1 ? exclusive_scan : exclusive_scan_by_key
- * dec2 = decode_neighlist_p2
+ * dec2 = decode_neighlist_p2 (TPA)
  */
 void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int reload_maxpage) {
   // nb: we do not expect nparticles or pgsize to change
@@ -295,16 +295,21 @@ void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int rel
 #if TPN
 /*
  * DEV
- *
- *                                  .---(zero)--> (inv2) --> [d_nel]
- *                                 /                ^        [d_tad]
- *                                /                 |
+ *                 .-------------------------------.
+ *                /                                v
+ *               /                  .---(zero)--> (inv2) --> [d_nel]
+ * [d_valid] ---'                  /                ^        [d_tad]
+ *            /                   /                 |
  * [d_neighidx] --+-(inv1)--> [d_nel] --(scan)--> [d_ffo]
  *                |
  * [d_offset] ----+
  *                |
  * [d_numneigh] --+
  *
+ * inv1 = invert_neighlist_p1 (TPA)
+ * zero = memset(0)
+ * scan = exclusive_scan
+ * inv2 = invert_neighlist_p2 (TPN)
  */
 void CudaNeighList::reload_inverse() {
   cudaMemset(d_nel, 0, d_nel_size);
