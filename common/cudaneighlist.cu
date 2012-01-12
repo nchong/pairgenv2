@@ -196,19 +196,25 @@ void CudaNeighList::resize(int new_maxpage) {
 
 /*
  *    CPU            DEV
- *                                                                            ,-------. 
- *                                                                            v       |
- *    numneigh ----> [d_numneigh] -----------------------------(scan) --> [d_offset]  |
- *                                                               /            |       |
- *  .(if maxpage > 1).........................................  /           (dec2) ---'
- *  | firstneigh -->  d_firstneigh -- (dec1) --> [d_pageidx] --'
- *  `........                           /                    |
- *          |                          /                     |
- *    pages |------>  d_pages --------'                      |
-        \   `................................................'
- *        \
- *         '-------> [d_neighidx]
+ *                                                                ,-------.
+ *                                                                v       |
+ *    numneigh ====> [d_numneigh] -----------------(scan) --> [d_offset]  |
+ *                                                   ^            |       |
+ *                                                   |            v       |
+ *  .(if maxpage > 1).............................   |          (dec2) ---'
+ *  : firstneigh ==>  d_firstneigh               :   |
+ *  `........           \                        :   |
+ *          :            v                       :  /
+ *          :           (dec1) --> [d_pageidx] --:-'
+ *          :            ^                       :
+ *          :           /                        :
+ *    pages =======>  d_pages                    :
+        \\  `....................................:
+ *       \\
+ *        ''=======> [d_neighidx]
  *
+ * ===> = memcpy (pages into d_neighidx is load_pages() memcpy)
+ * ---> = dataflow
  * dec1 = decode_neighlist_p1 (TPA)
  * scan = maxpage > 1 ? exclusive_scan : exclusive_scan_by_key
  * dec2 = decode_neighlist_p2 (TPA)
@@ -306,6 +312,7 @@ void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int rel
  *                |
  * [d_numneigh] --+
  *
+ * ---> = dataflow
  * inv1 = invert_neighlist_p1 (TPA)
  * zero = memset(0)
  * scan = exclusive_scan
