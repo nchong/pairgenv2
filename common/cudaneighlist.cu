@@ -108,6 +108,30 @@ __global__ void invert_neighlist_p2(
     tad[ffo[j]+k] = tid;
   }
 }
+
+__global__ void invert_neighlist_p2_tpa(
+  //inputs
+  int nparticles,
+  int *datj,
+  int *off,
+  int *len,
+  int *ffo,
+  //outputs
+  int *tad,
+  int *nel       //nb: must be zeroed!
+) {
+  int tid = threadIdx.x + (blockIdx.x * blockDim.x) + (blockIdx.y * gridDim.x);
+
+  int n = len[tid];
+  if (tid < nparticles && n > 0) {
+    int off = offset[tid];
+    for (int i=0; i<n; i++) {
+      int j = datj[off+i];
+      int k = atomicAdd(&nel[j], 1);
+      tad[ffo[j]+k] = tid;
+    }
+  }
+}
 #endif
 
 CudaNeighList::CudaNeighList(
@@ -330,6 +354,7 @@ void CudaNeighList::reload_inverse() {
   thrust::device_ptr<int> thrust_ffo(d_ffo);
   thrust::exclusive_scan(thrust_nel, thrust_nel + nparticles, thrust_ffo);
   cudaMemset(d_nel, 0, d_nel_size);
+#if 1
   invert_neighlist_p2<<<neighbor_grid_size, block_size>>>(
     (maxpage*pgsize),
     d_valid,
@@ -337,6 +362,16 @@ void CudaNeighList::reload_inverse() {
     d_ffo,
     d_tad,
     d_nel);
+#else
+  invert_neighlist_p2_tpa<<<grid_size, block_size>>>(
+    nparticles,
+    d_neighidx,
+    d_offset,
+    d_numneigh,
+    d_ffo,
+    d_tad,
+    d_nel);
+#endif
 #if PARANOID
   check_inverse();
 #endif
@@ -375,6 +410,20 @@ void CudaNeighList::check_inverse() {
   cudaMemcpy(tad,   d_tad,      d_tad_size,      cudaMemcpyDeviceToHost);
   cudaMemcpy(ffo,   d_ffo,      d_ffo_size,      cudaMemcpyDeviceToHost);
   cudaMemcpy(nel,   d_nel,      d_nel_size,      cudaMemcpyDeviceToHost);
+  //check nel
+  int *expected_nel = new int[maxpage*pgsize];
+  for (int n=0; n<maxpage*pgsize; n++) {
+    if (valid[n]) {
+      expected_nel[datj[n]]++;
+    }
+  }
+  for (int i=0; i<nparticles; i++) {
+    if (expected_nel[i]  != nel[i])
+        printf("%d> expected=%d actual=%d\n", i, expected_nel[i],  nel[i]);
+    assert(expected_nel[i]  == nel[i]);
+  }
+  delete[] expected_nel;
+  //end to end property
   for (int n=0; n<maxpage*pgsize; n++) {
     if (valid[n]) {
       int j = datj[n];
