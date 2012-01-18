@@ -124,9 +124,9 @@ __global__ void invert_neighlist_p2_tpa(
 
   int n = len[tid];
   if (tid < nparticles && n > 0) {
-    int off = offset[tid];
+    int o = off[tid];
     for (int i=0; i<n; i++) {
-      int j = datj[off+i];
+      int j = datj[o+i];
       int k = atomicAdd(&nel[j], 1);
       tad[ffo[j]+k] = tid;
     }
