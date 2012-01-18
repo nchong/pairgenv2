@@ -128,7 +128,7 @@ __global__ void invert_neighlist_p2_tpa(
     for (int i=0; i<n; i++) {
       int j = datj[o+i];
       int k = atomicAdd(&nel[j], 1);
-      tad[ffo[j]+k] = tid;
+      tad[ffo[j]+k] = o+i;
     }
   }
 }
@@ -354,7 +354,7 @@ void CudaNeighList::reload_inverse() {
   thrust::device_ptr<int> thrust_ffo(d_ffo);
   thrust::exclusive_scan(thrust_nel, thrust_nel + nparticles, thrust_ffo);
   cudaMemset(d_nel, 0, d_nel_size);
-#if 1
+#if 0
   invert_neighlist_p2<<<neighbor_grid_size, block_size>>>(
     (maxpage*pgsize),
     d_valid,
@@ -430,6 +430,13 @@ void CudaNeighList::check_inverse() {
       bool found = false;
       for (int k=0; k<nel[j]; k++) {
         found = found || (tad[ffo[j]+k] == n);
+      }
+      if (!found) {
+        printf("Could not find n=%d (j=%d) in [ " , n, j);
+        for (int k=0; k<nel[j]; k++) {
+          printf("%d ", tad[ffo[j]+k]);
+        }
+        printf("]\n");
       }
       assert(found);
     }
