@@ -79,7 +79,7 @@ class CudaNeighList {
   private:
     void check_decode(int *numneigh, int **firstneigh);
 #if TPN
-    void reload_inverse();
+    void reload_inverse(int *numneigh, int **firstneigh);
     void check_inverse();
 #endif
 

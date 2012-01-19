@@ -10,6 +10,18 @@
 #error You need to #define MAX_GRID_DIM (see Makefile.config)
 #endif
 
+/*
+ * All kernels (decode/invert) accept a 2d grid and work over a 1d array.
+ * The kernel is parameterised with blockDim  bx_dim
+ *                                  gridDim  (gx_dim, gy_dim)
+ * Each thread has a threadIdx  tx,
+ *                   blockIdx  (bx, by)
+ * And we use this to calculate a unique 1d index.
+ */
+__device__ int get_tid() {
+  return threadIdx.x + (blockIdx.x * blockDim.x) + (blockIdx.y * blockDim.x * gridDim.x);
+}
+
 __global__ void decode_neighlist_p1(
   //inputs
   int nparticles,
@@ -20,7 +32,7 @@ __global__ void decode_neighlist_p1(
   //outputs
   int *pageidx
 ) {
-  int tid = threadIdx.x + (blockIdx.x * blockDim.x) + (blockIdx.y * gridDim.x);
+  int tid = get_tid();
 
   if (tid < nparticles) {
     int *myfirstneigh = firstneigh[tid];
@@ -43,7 +55,7 @@ __global__ void decode_neighlist_p2(
   //inout
   int *offset
 ) {
-  int tid = threadIdx.x + (blockIdx.x * blockDim.x) + (blockIdx.y * gridDim.x);
+  int tid = get_tid();
 
   if (tid < nparticles) {
     int mypage = pageidx[tid];
@@ -60,7 +72,7 @@ __global__ void decode_neighlist_p3(
   int *valid,
   int *dati
 ) {
-  int tid = threadIdx.x + (blockIdx.x * blockDim.x) + (blockIdx.y * gridDim.x);
+  int tid = get_tid();
 
   if (tid < nparticles) {
     for (int i=0; i<numneigh[tid]; i++) {
@@ -78,7 +90,7 @@ __global__ void invert_neighlist_p1(
   //outputs
   int *nel       //nb: must be zeroed!
 ) {
-  int tid = threadIdx.x + (blockIdx.x * blockDim.x) + (blockIdx.y * gridDim.x);
+  int tid = get_tid();
 
   int n = numneigh[tid];
   if (tid < nparticles && n > 0) {
@@ -100,7 +112,7 @@ __global__ void invert_neighlist_p2(
   int *tad,
   int *nel       //nb: must be zeroed!
 ) {
-  int tid = threadIdx.x + (blockIdx.x * blockDim.x) + (blockIdx.y * gridDim.x);
+  int tid = get_tid();
 
   if (tid < nneighbors && valid[tid]) {
     int j = neighidx[tid];
@@ -120,7 +132,7 @@ __global__ void invert_neighlist_p2_tpa(
   int *tad,
   int *nel       //nb: must be zeroed!
 ) {
-  int tid = threadIdx.x + (blockIdx.x * blockDim.x) + (blockIdx.y * gridDim.x);
+  int tid = get_tid();
 
   int n = len[tid];
   if (tid < nparticles && n > 0) {
@@ -317,8 +329,7 @@ void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int rel
 #endif
 
 #if TPN
-  reload_inverse();
-  check_inverse();
+  reload_inverse(numneigh, firstneigh);
 #endif
 }
 
@@ -342,7 +353,51 @@ void CudaNeighList::reload(int *numneigh, int **firstneigh, int **pages, int rel
  * scan = exclusive_scan
  * inv2 = invert_neighlist_p2 (TPN)
  */
-void CudaNeighList::reload_inverse() {
+void CudaNeighList::reload_inverse(int *numneigh, int **firstneigh) {
+#if HOST_DECODE
+  int *h_valid    = new int[maxpage*pgsize];
+  int *h_neighidx = new int[maxpage*pgsize];
+  int *h_offset   = new int[nparticles];
+  int *h_numneigh = new int[nparticles];
+  cudaMemcpy(h_valid,    d_valid,    d_valid_size,    cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_neighidx, d_neighidx, d_neighidx_size, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_offset,   d_offset,   d_offset_size,   cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_numneigh, d_numneigh, d_numneigh_size, cudaMemcpyDeviceToHost);
+  int *h_nel = new int[nparticles];
+  int *h_ffo = new int[nparticles];
+  int *h_tad = new int[maxpage*pgsize];
+  // simulate first part of decode
+  std::fill_n(h_nel, nparticles, 0);
+  for (int i=0; i<nparticles; i++) {
+    for (int k=0; k<numneigh[i]; k++) {
+      h_nel[h_neighidx[h_offset[i]+k]]++;
+    }
+  }
+  // simulate exclusive scan
+  h_ffo[0] = 0;
+  for (int i=1; i<nparticles; i++) {
+    h_ffo[i] = h_ffo[i-1] + h_nel[i-1];
+  }
+  // simulate second part of decode
+  std::fill_n(h_nel, nparticles, 0);
+  for (int i=0; i<maxpage*pgsize; i++) {
+    if (h_valid[i]) {
+      int j = h_neighidx[i];
+      int k = h_nel[j]++;
+      h_tad[h_ffo[j]+k] = i;
+    }
+  }
+  cudaMemcpy(d_nel, h_nel, d_nel_size, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_ffo, h_ffo, d_ffo_size, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_tad, h_tad, d_tad_size, cudaMemcpyHostToDevice);
+  delete[] h_valid;
+  delete[] h_neighidx;
+  delete[] h_offset;
+  delete[] h_numneigh;
+  delete[] h_nel;
+  delete[] h_ffo;
+  delete[] h_tad;
+#else
   cudaMemset(d_nel, 0, d_nel_size);
   invert_neighlist_p1<<<grid_size, block_size>>>(
     nparticles,
@@ -372,6 +427,8 @@ void CudaNeighList::reload_inverse() {
     d_tad,
     d_nel);
 #endif
+#endif
+
 #if PARANOID
   check_inverse();
 #endif
