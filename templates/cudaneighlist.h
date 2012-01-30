@@ -23,6 +23,7 @@ class {{classname}}CudaNeighList : public CudaNeighList {
     );
 
 {% for p in params if p.is_type('N', '-') %}
+    void load_{{ p.name() }}({{ p.pages() }});
     void unload_{{ p.name() }}({{ p.pages() }});
 {% endfor %}
 

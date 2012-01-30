@@ -41,6 +41,9 @@ void {{classname}}CudaNeighList::reload(int *numneigh, int **firstneigh, int **p
 }
 
 {% for p in params if p.is_type('N', '-') %}
+void {{classname}}CudaNeighList::load_{{ p.name() }}({{ p.pages() }}) {
+  load_pages({{ p.name(pre='d_') }}, {{ p.name(pre='h_', suf='pages') }}, /*dim=*/{{ p.dim }});
+}
 void {{classname}}CudaNeighList::unload_{{ p.name() }}({{ p.pages() }}) {
   unload_pages({{ p.name(pre='d_') }}, {{ p.name(pre='h_', suf='pages') }}, /*dim=*/{{ p.dim }});
 }
